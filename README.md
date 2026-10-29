@@ -76,6 +76,12 @@ Los parámetros (umbral de confianza, salto de fotogramas, zona horaria, segment
 
 Se entrena en Google Colab (GPU T4 gratuita) en dos fases: primero con RDD2022 y luego un ajuste fino con fotos propias de Montería etiquetadas en Roboflow.
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/vixanxva/TapaHuecos/blob/main/notebooks/entrenamiento_colab.ipynb)
+
+El notebook [notebooks/entrenamiento_colab.ipynb](notebooks/entrenamiento_colab.ipynb) hace todo el proceso de principio a fin: descarga de figshare solo los países de RDD2022 que se elijan (guarda los zips en Drive para no repetir la descarga), los convierte, entrena con los resultados en Drive, permite reanudar si Colab se desconecta, evalúa y deja `best_rdd.pt` en `MyDrive/TapaHuecos/modelos/`. Tiene un modo `rapido` (`yolov8n`, 2 países, 25 épocas; del orden de 1,5 a 3 horas) para tener pronto un modelo funcionando, y un modo `completo` (`yolov8s`, 100 épocas) que necesita varias sesiones. Después se copia `best_rdd.pt` a `modelos/` y se usa con `tapahuecos procesar ... --pesos modelos/best_rdd.pt`.
+
+Los mismos pasos, a mano:
+
 ```bash
 python scripts/preparar_rdd2022.py --origen datos/RDD2022 --destino datos/rdd_yolo
 python scripts/entrenar.py --datos datos/rdd_yolo/data.yaml --destino modelos/best_rdd.pt
