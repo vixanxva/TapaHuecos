@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tapahuecos"
+version = "0.1.0"
+description = "Detector de daños en las vías (huecos y grietas) a partir de video y recorrido GPS."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "opencv-python>=4.8",
+    "gpxpy>=1.6",
+    "pandas>=2.0",
+    "folium>=0.15",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+# Ultralytics es pesado (arrastra PyTorch); se separa para que las pruebas y la CI no lo necesiten.
+yolo = ["ultralytics>=8.3"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+tapahuecos = "tapahuecos.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

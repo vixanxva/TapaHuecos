@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Datos pesados: no se versionan (se comparten por Drive / Roboflow)
+datos/**
+!datos/README.md
+!datos/**/.gitkeep
+modelos/*.pt
+modelos/*.onnx
+calibracion/*.npy
+calibracion/*.jpg
+salidas/
+reportes/
+runs/
+
+# Pesos que Ultralytics descarga automáticamente
+yolov8*.pt
+yolo11*.pt
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

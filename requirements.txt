@@ -1,0 +1,3 @@
+# Las dependencias se declaran una sola vez, en pyproject.toml.
+# Este archivo existe por comodidad (Colab, `pip install -r requirements.txt`).
+-e .[yolo,dev]

@@ -1,0 +1,34 @@
+# Configuración del detector. Todos los valores tienen un predeterminado en
+# src/tapahuecos/config.py; aquí solo hace falta cambiar lo que se quiera ajustar.
+
+modelo:
+  pesos: modelos/best.pt        # resultado de scripts/entrenar.py
+  confianza: 0.35               # umbral mínimo de confianza de YOLO
+  iou: 0.5                      # umbral de supresión de no máximos
+  tamano_imagen: 640            # debe coincidir con el usado al entrenar
+  tracker: bytetrack.yaml       # seguimiento incluido en Ultralytics
+  dispositivo: null             # null = automático, "cpu", "0" (primera GPU)
+
+video:
+  cada_n_fotogramas: 2          # procesar 1 de cada N fotogramas
+  inicio_grabacion: null        # ISO 8601 (ej. "2026-10-29T14:30:15"); null = deducir del nombre del archivo
+  utc_offset_horas: -5          # Colombia (UTC-5, sin horario de verano)
+  desfase_gps_s: 0.0            # corrección fina si el reloj de la cámara y el GPS no coinciden
+
+segmentacion:
+  clahe_limite: 2.0             # realce de contraste local
+  clahe_rejilla: 8
+  kernel_suavizado: 5           # desenfoque gaussiano (impar)
+  kernel_morfologico: 5         # apertura / cierre para limpiar la máscara
+  kernel_grietas: 15            # tamaño del black-hat que resalta grietas finas
+  contraste_minimo: 4.0         # recortes más planos que esto no se segmentan
+  area_minima_px: 40            # contornos más pequeños se descartan como ruido
+
+calibracion:
+  homografia: calibracion/homografia.npy   # generada con scripts/calibrar_homografia.py
+  metros_por_pixel: null                   # alternativa aproximada si no hay homografía
+
+registro:
+  min_fotogramas: 3             # un daño debe verse en al menos N fotogramas para registrarse
+  max_ausencia: 30              # fotogramas sin ver un daño antes de darlo por terminado
+  tolerancia_gps_s: 5.0         # margen permitido fuera del rango de tiempo del GPX
