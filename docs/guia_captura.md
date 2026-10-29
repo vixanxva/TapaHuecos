@@ -53,6 +53,10 @@ python scripts/calibrar_homografia.py --video datos/videos/calibracion.mp4 --seg
 
 Lo normal es que el programa enderece el video solo, con la orientación que guarda el celular. Si aun así sale de lado o de cabeza (por ejemplo, porque se grabó en vertical o la cámara está montada al revés), poner en `config.yaml` el giro que falta, en sentido horario: `rotacion: 90`, `180` o `270`. Usar el mismo valor al calibrar: `calibrar_homografia.py ... --rotacion 90`.
 
+## Videos en vertical
+
+Si el video se grabó en vertical, la vía queda solo en la parte de abajo. Para que el modelo se concentre en ella, procesar solo esa franja: `region: [0, 0.45, 1, 1]` en `config.yaml`, o `--region 0,0.45,1,1` en `tapahuecos procesar`. Revisar en el video anotado (el rectángulo gris) que la franja cubra toda la vía.
+
 ## Si los puntos salen corridos en el mapa
 
 - **Todos desplazados a lo largo de la calle:** el reloj de la cámara y el del GPS no coinciden. Ajustar `desfase_gps_s` en `config.yaml` (en segundos, positivo o negativo).

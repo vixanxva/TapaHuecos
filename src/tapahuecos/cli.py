@@ -29,6 +29,12 @@ def _cmd_procesar(args: argparse.Namespace) -> int:
         cfg.video.cada_n_fotogramas = args.cada
     if args.inicio:
         cfg.video.inicio_grabacion = args.inicio
+    if args.region:
+        try:
+            cfg.video.region = [float(v) for v in args.region.split(",")]
+        except ValueError:
+            log.error("--region debe ser x1,y1,x2,y2 con números entre 0 y 1 (ej. 0,0.45,1,1)")
+            return 1
 
     if args.video is not None and not args.video.exists():
         log.error("No existe el video %s", args.video)
@@ -165,6 +171,8 @@ def construir_parser() -> argparse.ArgumentParser:
     p.add_argument("--pesos", help="modelo YOLO (.pt); reemplaza el de la configuración")
     p.add_argument("--cada", type=int, metavar="N", help="procesar 1 de cada N fotogramas")
     p.add_argument("--inicio", help="hora de inicio del video, ISO 8601 (ej. 2026-10-29T14:30:15)")
+    p.add_argument("--region", metavar="X1,Y1,X2,Y2",
+                   help="analizar solo esa parte del fotograma, en fracciones (ej. 0,0.45,1,1)")
     p.add_argument("--mostrar", action="store_true", help="mostrar el video mientras se procesa")
     p.set_defaults(funcion=_cmd_procesar)
 

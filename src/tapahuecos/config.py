@@ -26,6 +26,7 @@ class ConfigVideo:
     utc_offset_horas: float = -5.0
     desfase_gps_s: float = 0.0
     rotacion: int = 0  # grados en sentido horario: 0, 90, 180 o 270
+    region: list[float] | None = None  # [x1, y1, x2, y2] en fracciones del fotograma; None = completo
 
 
 @dataclass
@@ -60,6 +61,21 @@ class Config:
     segmentacion: ConfigSegmentacion = field(default_factory=ConfigSegmentacion)
     calibracion: ConfigCalibracion = field(default_factory=ConfigCalibracion)
     registro: ConfigRegistro = field(default_factory=ConfigRegistro)
+
+
+def validar_region(region: list[float] | None) -> None:
+    if region is None:
+        return
+    if (
+        len(region) != 4
+        or not all(0 <= v <= 1 for v in region)
+        or region[0] >= region[2]
+        or region[1] >= region[3]
+    ):
+        raise ValueError(
+            f"video.region debe ser [x1, y1, x2, y2] con 0 <= x1 < x2 <= 1 y 0 <= y1 < y2 <= 1; "
+            f"se recibió {region}"
+        )
 
 
 def _seccion(tipo: type, datos: dict[str, Any], nombre: str):

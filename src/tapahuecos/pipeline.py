@@ -12,7 +12,7 @@ from typing import Protocol
 import cv2
 import numpy as np
 
-from tapahuecos.config import Config
+from tapahuecos.config import Config, validar_region
 from tapahuecos.detector import Deteccion
 from tapahuecos.entrada import FuenteVideo, resolver_inicio
 from tapahuecos.fusion import fusionar_bd, unicos
@@ -51,6 +51,16 @@ class Resultado:
         return self.fotogramas_procesados / self.segundos if self.segundos else 0.0
 
 
+def region_en_pixeles(
+    region: list[float] | None, ancho: int, alto: int
+) -> tuple[int, int, int, int]:
+    """Convierte la región en fracciones [x1, y1, x2, y2] a píxeles; None = fotograma completo."""
+    if region is None:
+        return 0, 0, ancho, alto
+    x1, y1, x2, y2 = region
+    return round(x1 * ancho), round(y1 * alto), round(x2 * ancho), round(y2 * alto)
+
+
 def _verificar_solape(inicio: datetime, duracion_s: float, recorrido: Recorrido) -> None:
     fin = inicio + timedelta(seconds=duracion_s)
     if fin < recorrido.inicio or inicio > recorrido.fin:
@@ -72,6 +82,7 @@ def procesar(
     detector: DetectorProtocolo | None = None,
 ) -> Resultado:
     """Procesa un video (ruta) o una cámara (índice) y genera todas las salidas."""
+    validar_region(cfg.video.region)
     carpeta_salida = Path(carpeta_salida)
     carpeta_salida.mkdir(parents=True, exist_ok=True)
     recorrido = Recorrido.desde_gpx(ruta_gpx) if ruta_gpx else None
@@ -128,8 +139,13 @@ def procesar(
                 imagen = fotograma.imagen
                 anotado = imagen.copy()
                 alto, ancho = imagen.shape[:2]
-                for det in detector.rastrear(imagen):
+                rx1, ry1, rx2, ry2 = region_en_pixeles(cfg.video.region, ancho, alto)
+                if cfg.video.region is not None:
+                    cv2.rectangle(anotado, (rx1, ry1), (rx2 - 1, ry2 - 1), (200, 200, 200), 1)
+                # YOLO solo ve la región; sus recuadros se llevan al fotograma completo.
+                for det in detector.rastrear(np.ascontiguousarray(imagen[ry1:ry2, rx1:rx2])):
                     x1, y1, x2, y2 = det.caja
+                    x1, y1, x2, y2 = x1 + rx1, y1 + ry1, x2 + rx1, y2 + ry1
                     x1, y1 = max(0, x1), max(0, y1)
                     x2, y2 = min(ancho, x2), min(alto, y2)
                     if x2 - x1 < 3 or y2 - y1 < 3:

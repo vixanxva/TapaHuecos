@@ -2,11 +2,13 @@
 
 import cv2
 import numpy as np
+import pytest
 
 from tapahuecos.clases import clase_por_codigo
 from tapahuecos.config import Config
 from tapahuecos.detector import Deteccion
 from tapahuecos.pipeline import procesar
+from tapahuecos.registro import BaseDatos
 
 
 class DetectorFalso:
@@ -44,8 +46,6 @@ def test_procesar_genera_todas_las_salidas(tmp_path, gpx_recto):
     assert r.video_anotado.exists() and r.mapa.exists() and r.csv.exists()
     assert len(list((salida / "recortes").glob("*.jpg"))) == 1
 
-    from tapahuecos.registro import BaseDatos
-
     with BaseDatos(r.base_datos) as bd:
         (fila,) = bd.danos()
     assert fila["clase"] == "D40"
@@ -53,3 +53,40 @@ def test_procesar_genera_todas_las_salidas(tmp_path, gpx_recto):
     esperado_m2 = np.pi * 60 * 40 * 0.005**2
     assert abs(fila["area_m2"] - esperado_m2) / esperado_m2 < 0.2
     assert "recortes/" in r.mapa.read_text(encoding="utf-8")
+
+
+class DetectorQueMide:
+    """Anota el tamaño de lo que recibe y devuelve un recuadro en coordenadas de esa imagen."""
+
+    def __init__(self):
+        self.formas = []
+
+    def rastrear(self, imagen):
+        self.formas.append(imagen.shape[:2])
+        return [Deteccion((280, 0, 360, 60), clase_por_codigo("D40"), 0.8, 3)]
+
+
+def test_region_de_interes(tmp_path):
+    video = tmp_path / "VID_20261029_143010.avi"
+    _video_sintetico(video, segundos=1)
+    cfg = Config()
+    cfg.video.region = [0.0, 0.5, 1.0, 1.0]  # solo la mitad inferior de 640 x 480
+    detector = DetectorQueMide()
+
+    r = procesar(video, cfg, tmp_path / "salidas", detector=detector)
+
+    assert set(detector.formas) == {(240, 640)}
+    with BaseDatos(r.base_datos) as bd:
+        (fila,) = bd.danos()
+    # El recuadro vuelve a coordenadas del fotograma completo.
+    assert (fila["x1"], fila["y1"], fila["x2"], fila["y2"]) == (280, 240, 360, 300)
+
+
+@pytest.mark.parametrize("region", [[0, 0.5, 1], [0, 0.6, 1, 0.4], [0, -0.1, 1, 1], [0, 0, 1.5, 1]])
+def test_region_invalida(tmp_path, region):
+    video = tmp_path / "VID_20261029_143010.avi"
+    _video_sintetico(video, segundos=1)
+    cfg = Config()
+    cfg.video.region = region
+    with pytest.raises(ValueError):
+        procesar(video, cfg, tmp_path / "salidas", detector=DetectorQueMide())
