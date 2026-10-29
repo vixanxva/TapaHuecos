@@ -55,8 +55,8 @@ class Detector:
         ids = cajas.id.cpu().numpy().astype(int).tolist() if cajas.id is not None else None
         return [
             Deteccion(
-                caja=tuple(xyxy[i]),
-                clase=self._clases[clases[i]],
+                caja=tuple(int(v) for v in xyxy[i]),  # int de Python: SQLite no acepta int64 de NumPy
+                clase=self._clases[int(clases[i])],
                 confianza=float(confianzas[i]),
                 track_id=ids[i] if ids is not None else None,
             )

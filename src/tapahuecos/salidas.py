@@ -19,12 +19,22 @@ MONTERIA = (8.7479, -75.8814)
 _FUENTE = cv2.FONT_HERSHEY_SIMPLEX
 
 
+def _escala(imagen: np.ndarray) -> float:
+    """Tamaño de letra proporcional al fotograma: 0.5 a 640 px, 1.2 a 1920 px."""
+    return max(0.5, max(imagen.shape[:2]) / 1600)
+
+
 def _texto_con_fondo(imagen: np.ndarray, texto: str, origen: tuple[int, int], color) -> None:
-    (ancho, alto), base = cv2.getTextSize(texto, _FUENTE, 0.5, 1)
+    escala = _escala(imagen)
+    grosor = max(1, round(escala * 1.5))
+    margen = round(4 * escala)
+    (ancho, alto), base = cv2.getTextSize(texto, _FUENTE, escala, grosor)
     x, y = origen
-    y = max(y, alto + base + 2)
-    cv2.rectangle(imagen, (x, y - alto - base - 2), (x + ancho + 4, y), color, cv2.FILLED)
-    cv2.putText(imagen, texto, (x + 2, y - base), _FUENTE, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+    y = max(y, alto + base + margen)
+    cv2.rectangle(imagen, (x, y - alto - base - margen), (x + ancho + 2 * margen, y), color, cv2.FILLED)
+    cv2.putText(
+        imagen, texto, (x + margen, y - base), _FUENTE, escala, (255, 255, 255), grosor, cv2.LINE_AA
+    )
 
 
 def dibujar_deteccion(
@@ -41,7 +51,7 @@ def dibujar_deteccion(
         capa = region.copy()
         capa[mascara > 0] = color
         cv2.addWeighted(capa, 0.45, region, 0.55, 0, dst=region)
-    cv2.rectangle(imagen, (x1, y1), (x2, y2), color, 2)
+    cv2.rectangle(imagen, (x1, y1), (x2, y2), color, max(2, round(_escala(imagen) * 3)))
     partes = [det.clase.codigo, f"{det.confianza:.2f}"]
     if det.track_id is not None:
         partes.insert(1, f"#{det.track_id}")
@@ -51,7 +61,7 @@ def dibujar_deteccion(
 
 
 def dibujar_cabecera(imagen: np.ndarray, texto: str) -> None:
-    _texto_con_fondo(imagen, texto, (8, 24), (40, 40, 40))
+    _texto_con_fondo(imagen, texto, (8, 8), (40, 40, 40))
 
 
 class EscritorVideo:
@@ -151,7 +161,7 @@ def resumen(filas: list[dict]):
         .agg(
             cantidad=("id", "count"),
             unicos=("grupo_unico", "nunique"),
-            area_total_m2=("area_m2", "sum"),
+            area_total_m2=("area_m2", lambda s: s.sum(min_count=1)),  # vacía si no hay calibración
             area_media_m2=("area_m2", "mean"),
             con_gps=("latitud", lambda s: s.notna().mean()),
             revisados=("verificado", lambda s: s.notna().sum()),
