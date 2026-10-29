@@ -19,7 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Ultralytics es pesado (arrastra PyTorch); se separa para que las pruebas y la CI no lo necesiten.
-yolo = ["ultralytics>=8.3"]
+yolo = ["ultralytics>=8.3", "lap>=0.5.12"]  # lap: lo usa el seguidor ByteTrack
 dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]

@@ -94,7 +94,8 @@ class BaseDatos:
     def insertar_dano(
         self, recorrido_id: int, obs: Observacion, veces_visto: int, recorte: str
     ) -> int:
-        x1, y1, x2, y2 = obs.caja
+        # SQLite guardaría los enteros de NumPy como bytes; se convierten a int de Python.
+        x1, y1, x2, y2 = (int(v) for v in obs.caja)
         cursor = self.con.execute(
             """
             INSERT INTO danos (
@@ -104,12 +105,12 @@ class BaseDatos:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                recorrido_id, obs.track_id, obs.clase.codigo, obs.clase.nombre,
+                recorrido_id, int(obs.track_id), obs.clase.codigo, obs.clase.nombre,
                 round(obs.confianza, 4), veces_visto, obs.fotograma,
                 round(obs.tiempo_video_s, 3),
                 obs.instante_utc.astimezone(timezone.utc).isoformat(timespec="milliseconds")
                 if obs.instante_utc else None,
-                obs.latitud, obs.longitud, obs.area_px,
+                obs.latitud, obs.longitud, int(obs.area_px),
                 round(obs.area_m2, 5) if obs.area_m2 is not None else None,
                 x1, y1, x2, y2, recorte,
             ),

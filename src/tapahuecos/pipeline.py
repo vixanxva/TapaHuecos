@@ -30,6 +30,8 @@ from tapahuecos.segmentacion import segmentar
 
 log = logging.getLogger(__name__)
 
+VENTANA = "TapaHuecos (q para salir)"
+
 
 class DetectorProtocolo(Protocol):
     def rastrear(self, imagen: np.ndarray) -> list[Deteccion]: ...
@@ -153,7 +155,9 @@ def procesar(
                     det.caja = (x1, y1, x2, y2)
                     recorte = imagen[y1:y2, x1:x2]
                     seg = segmentar(recorte, det.clase.codigo, cfg.segmentacion)
-                    area_m2 = medidor.area_m2([c + (x1, y1) for c in seg.contornos])
+                    area_m2 = (
+                        medidor.area_m2([c + (x1, y1) for c in seg.contornos]) if seg.contornos else None
+                    )
                     dibujar_deteccion(anotado, det, seg.mascara, area_m2)
 
                     if det.track_id is None:
@@ -189,7 +193,11 @@ def procesar(
                 if fuente.total and procesados % 100 == 0:
                     log.info("%5.1f %% del video", 100 * fotograma.indice / fuente.total)
                 if mostrar:
-                    cv2.imshow("TapaHuecos (q para salir)", anotado)
+                    if procesados == 1:  # ventana ajustable que cabe en la pantalla de un portátil
+                        cv2.namedWindow(VENTANA, cv2.WINDOW_NORMAL)
+                        escala = min(1.0, 860 / alto, 1500 / ancho)
+                        cv2.resizeWindow(VENTANA, round(ancho * escala), round(alto * escala))
+                    cv2.imshow(VENTANA, anotado)
                     if cv2.waitKey(1) & 0xFF == ord("q"):
                         break
         finally:

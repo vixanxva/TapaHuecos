@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import zlib
 from dataclasses import dataclass
 
 
@@ -54,4 +55,10 @@ def clase_por_codigo(codigo: str) -> ClaseDano:
     codigo = codigo.strip()
     if codigo in _POR_CODIGO:
         return _POR_CODIGO[codigo]
-    return ClaseDano(codigo, codigo, "Clase no estándar", (160, 160, 160), "#a0a0a0")
+    # Color fijo por nombre, para que cada clase de un modelo genérico se distinga en el video.
+    hexa = _COLORES_GENERICOS[zlib.crc32(codigo.encode()) % len(_COLORES_GENERICOS)]
+    r, g, b = (int(hexa[i:i + 2], 16) for i in (1, 3, 5))
+    return ClaseDano(codigo, codigo, "Clase no estándar", (b, g, r), hexa)
+
+
+_COLORES_GENERICOS = ("#00c853", "#2979ff", "#ff6d00", "#d500f9", "#00b8d4", "#ffd600", "#ff1744")

@@ -54,7 +54,9 @@ def realzar(gris: np.ndarray, cfg: ConfigSegmentacion) -> np.ndarray:
 def segmentar(recorte: np.ndarray, codigo_clase: str, cfg: ConfigSegmentacion) -> Segmentacion:
     alto, ancho = recorte.shape[:2]
     vacia = np.zeros((alto, ancho), np.uint8)
-    if alto < 3 or ancho < 3:
+    modo = MODO_POR_CLASE.get(codigo_clase)
+    # Las clases que no son daños (p. ej. "person" de un modelo genérico) no se segmentan.
+    if modo is None or alto < 3 or ancho < 3:
         return Segmentacion(vacia, [])
 
     gris = cv2.cvtColor(recorte, cv2.COLOR_BGR2GRAY) if recorte.ndim == 3 else recorte
@@ -62,7 +64,6 @@ def segmentar(recorte: np.ndarray, codigo_clase: str, cfg: ConfigSegmentacion) -
         return Segmentacion(vacia, [])  # superficie uniforme: Otsu solo separaría ruido
     suave = realzar(gris, cfg)
 
-    modo = MODO_POR_CLASE.get(codigo_clase, "region")
     limpieza = _elipse(cfg.kernel_morfologico)
     if modo == "region":
         _, binaria = cv2.threshold(suave, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
