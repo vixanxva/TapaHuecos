@@ -32,7 +32,7 @@
 
 ## Nombres de archivo
 
-No hay que renombrar los videos: el programa toma la hora de inicio del nombre que pone la cámara (`VID_20261029_143015.mp4`). Si la cámara usa otro formato (`IMG_1234.MOV`, `GX010023.MP4`), hay que indicar la hora con `--inicio 2026-10-29T14:30:15`.
+No hay que renombrar los videos: el programa toma la hora de inicio del nombre que pone la cámara (`VID_20261029_143015.mp4`, `PXL_20261029_143015123.mp4`, `20261029_143015.mp4`). Si la cámara usa otro formato (`IMG_1234.MOV`, `GX010023.MP4`) o el video pasó por WhatsApp (`VID-20261029-WA0001.mp4`, sin hora), hay que indicar la hora con `--inicio 2026-10-29T14:30:15`.
 
 Organización sugerida:
 
@@ -48,6 +48,10 @@ Con el vehículo detenido y la cámara en su posición definitiva, se graban uno
 ```bash
 python scripts/calibrar_homografia.py --video datos/videos/calibracion.mp4 --segundo 2 --ancho 3 --largo 5
 ```
+
+## Si el video sale girado
+
+Lo normal es que el programa enderece el video solo, con la orientación que guarda el celular. Si aun así sale de lado o de cabeza (por ejemplo, porque se grabó en vertical o la cámara está montada al revés), poner en `config.yaml` el giro que falta, en sentido horario: `rotacion: 90`, `180` o `270`. Usar el mismo valor al calibrar: `calibrar_homografia.py ... --rotacion 90`.
 
 ## Si los puntos salen corridos en el mapa
 

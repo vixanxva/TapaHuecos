@@ -14,6 +14,7 @@ video:
   inicio_grabacion: null        # ISO 8601 (ej. "2026-10-29T14:30:15"); null = deducir del nombre del archivo
   utc_offset_horas: -5          # Colombia (UTC-5, sin horario de verano)
   desfase_gps_s: 0.0            # corrección fina si el reloj de la cámara y el GPS no coinciden
+  rotacion: 0                   # giro extra en sentido horario (0, 90, 180, 270) si el video llega girado
 
 segmentacion:
   clahe_limite: 2.0             # realce de contraste local
