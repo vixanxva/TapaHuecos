@@ -29,6 +29,7 @@ Lista inicial de issues para el tablero de GitHub Projects, agrupada por hito. C
 - ☑ Registro en SQLite, una sola vez por daño (`registro.py`)
 - ☑ Video anotado, mapa, CSV y resumen (`salidas.py`)
 - ☑ Interfaz de consola (`cli.py`)
+- ☑ Demo sin videos reales: video con imágenes de RDD2022 y GPX simulado en Montería (`scripts/demo.py`)
 - [ ] Probar el pipeline completo con un recorrido real y corregir lo que falle
 
 ## M4 · Pruebas en campo
