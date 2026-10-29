@@ -80,7 +80,7 @@ def _cmd_fusionar(args: argparse.Namespace) -> int:
     with _abrir_bd(args.db) as bd:
         registros, unicos = fusionar_bd(bd, args.radio, misma_clase=not args.cualquier_clase)
     print(
-        f"{registros} registros → {unicos} daños únicos (radio {args.radio:g} m). "
+        f"{registros} registros -> {unicos} daños únicos (radio {args.radio:g} m). "
         "Regenere el mapa con `tapahuecos mapa`."
     )
     return 0

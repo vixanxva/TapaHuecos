@@ -55,7 +55,7 @@ def _verificar_solape(inicio: datetime, duracion_s: float, recorrido: Recorrido)
     fin = inicio + timedelta(seconds=duracion_s)
     if fin < recorrido.inicio or inicio > recorrido.fin:
         log.warning(
-            "El video (%s → %s) no coincide en el tiempo con el GPX (%s → %s). "
+            "El video (%s a %s) no coincide en el tiempo con el GPX (%s a %s). "
             "Revise utc_offset_horas, desfase_gps_s o indique --inicio.",
             inicio.isoformat(timespec="seconds"), fin.isoformat(timespec="seconds"),
             recorrido.inicio.isoformat(timespec="seconds"),
