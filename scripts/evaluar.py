@@ -9,17 +9,26 @@ revisados por `tapahuecos revisar`; exhaustividad si se entrega la verdad de cam
     python scripts/evaluar.py campo --db salidas/danos.db --verdad datos/verdad_campo.csv
 
 El CSV de verdad de campo tiene columnas: latitud,longitud[,clase]
+
+Error de área y de posición, contra huecos medidos con cinta métrica (empareja cada
+hueco con el D40 registrado más cercano, uno a uno, a menos de --radio metros):
+    python scripts/evaluar.py area --db salidas/danos.db --medidos datos/huecos_medidos.csv
+
+El CSV de huecos medidos tiene columnas: latitud,longitud,largo_m,ancho_m,area_m2,foto
+(si area_m2 está vacía se calcula como la de una elipse: pi/4 · largo · ancho).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from tapahuecos.evaluacion import evaluar_campo  # noqa: E402
+from tapahuecos.evaluacion import evaluar_area, evaluar_campo  # noqa: E402
 from tapahuecos.registro import BaseDatos  # noqa: E402
 
 
@@ -84,6 +93,78 @@ def evaluar_en_campo(args: argparse.Namespace) -> None:
     _guardar(args.salida, "campo", lineas, {**m.__dict__, "f1": m.f1, "radio_m": args.radio})
 
 
+def _leer_medidos(ruta: Path) -> list[dict]:
+    import pandas as pd
+
+    medidos = pd.read_csv(ruta).to_dict("records")
+    for h in medidos:
+        if pd.isna(h.get("area_m2")):
+            h["area_m2"] = math.pi / 4 * h["largo_m"] * h["ancho_m"]
+    return medidos
+
+
+def _pct(valor) -> str:
+    return "—" if valor is None else f"{100 * valor:.1f} %"
+
+
+def _m(valor) -> str:
+    return "—" if valor is None else f"{valor:.2f} m"
+
+
+def evaluar_error_area(args: argparse.Namespace) -> None:
+    with BaseDatos(args.db) as bd:
+        filas = bd.danos()
+    medidos = _leer_medidos(args.medidos)
+    e = evaluar_area(filas, medidos, args.radio)
+    lineas = [
+        "# Error de área y de posición", "",
+        f"Huecos medidos: {e.n_medidos} · emparejados con un D40 registrado "
+        f"(radio {args.radio:g} m): {e.n_emparejados}", "",
+        "| Error | Media | Mediana | Máximo |", "|---|---|---|---|",
+        f"| Área | {_pct(e.area_media)} | {_pct(e.area_mediana)} | {_pct(e.area_maximo)} |",
+        f"| Posición | {_m(e.posicion_media_m)} | {_m(e.posicion_mediana_m)} | {_m(e.posicion_maximo_m)} |",
+        "", "Error de área: |estimada - real| / real, solo en los pares con ambas áreas.",
+        "", "| Hueco | Registro | Distancia | Área real (m²) | Área estimada (m²) | Error de área |",
+        "|---|---|---|---|---|---|",
+        *(f"| {p.medido + 1} | {p.registro_id} | {_m(p.distancia_m)} | {_fmt(p.area_real_m2)} "
+          f"| {_fmt(p.area_estimada_m2)} | {_pct(p.error_area)} |" for p in e.pares),
+    ]
+    datos = {**asdict(e), "radio_m": args.radio}
+    for par, fila in zip(e.pares, datos["pares"], strict=True):
+        fila["error_area"] = par.error_area
+    _guardar(args.salida, "error_area", lineas, datos)
+    _graficar_areas(e.pares, args.salida / "error_area.png")
+
+
+def _graficar_areas(pares: list, ruta: Path) -> None:
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("Aviso: matplotlib no está instalado; se omite la gráfica de área real contra estimada.")
+        return
+    con_area = [p for p in pares if p.error_area is not None]
+    if not con_area:
+        print("Aviso: no hay pares con ambas áreas; se omite la gráfica.")
+        return
+    reales = [p.area_real_m2 for p in con_area]
+    estimadas = [p.area_estimada_m2 for p in con_area]
+    tope = max(*reales, *estimadas) * 1.1
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.plot([0, tope], [0, tope], "--", color="gray", label="y = x")
+    ax.scatter(reales, estimadas)
+    ax.set(xlim=(0, tope), ylim=(0, tope), xlabel="Área real (m²)", ylabel="Área estimada (m²)",
+           title="Área real contra estimada")
+    ax.set_aspect("equal")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(ruta, dpi=150)
+    plt.close(fig)
+    print(f"Gráfica guardada en {ruta}")
+
+
 def _guardar(carpeta: Path, nombre: str, lineas: list[str], datos: dict) -> None:
     carpeta.mkdir(parents=True, exist_ok=True)
     texto = "\n".join(lineas) + "\n"
@@ -111,6 +192,13 @@ def main() -> None:
     c.add_argument("--radio", type=float, default=10.0, help="metros para considerar coincidencia")
     c.add_argument("--misma-clase", action="store_true", help="exigir que coincida la clase")
     c.set_defaults(funcion=evaluar_en_campo)
+
+    a = sub.add_parser("area", help="error de área y de posición contra huecos medidos")
+    a.add_argument("--db", type=Path, default=Path("salidas/danos.db"))
+    a.add_argument("--medidos", type=Path, required=True,
+                   help="CSV con latitud,longitud,largo_m,ancho_m,area_m2,foto")
+    a.add_argument("--radio", type=float, default=10.0, help="metros para considerar coincidencia")
+    a.set_defaults(funcion=evaluar_error_area)
 
     args = p.parse_args()
     args.funcion(args)

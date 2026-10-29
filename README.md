@@ -56,6 +56,7 @@ tapahuecos procesar --video datos/videos/VID_20261029_143015.mp4 --gpx datos/gpx
 tapahuecos resumen
 tapahuecos revisar          # marcar cada daño como real o falso positivo
 python scripts/evaluar.py campo --db salidas/danos.db
+python scripts/evaluar.py area --medidos datos/huecos_medidos.csv   # error de área y de posición
 ```
 
 Todos los resultados quedan en `salidas/`: `*_anotado.mp4`, `recortes/`, `danos.db`, `danos.csv` y `mapa.html`. La base de datos acumula todos los recorridos procesados en esa carpeta.
@@ -96,7 +97,7 @@ TapaHuecos/
 │   ├── registro.py             [5] SQLite y registro único por daño
 │   ├── salidas.py              [6] dibujo, video, mapa, CSV, resumen
 │   ├── pipeline.py             orquesta las 6 etapas
-│   ├── evaluacion.py           métricas de campo
+│   ├── evaluacion.py           métricas de campo, error de área y de posición
 │   ├── clases.py               D00, D10, D20, D40
 │   └── cli.py                  comandos de consola
 ├── scripts/                    preparar datos, entrenar, evaluar, calibrar

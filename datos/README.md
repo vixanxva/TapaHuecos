@@ -10,7 +10,8 @@ datos/
 ├── rdd_yolo/        salida de scripts/preparar_rdd2022.py
 ├── monteria/        exportación de Roboflow (formato YOLOv8)
 ├── combinado/       salida de scripts/combinar_datasets.py
-└── verdad_campo.csv latitud,longitud,clase de los daños anotados en campo
+├── verdad_campo.csv latitud,longitud,clase de los daños anotados en campo
+└── huecos_medidos.csv latitud,longitud,largo_m,ancho_m,area_m2,foto de los huecos medidos con cinta
 ```
 
 Fuera de esta carpeta, y tampoco versionados:
