@@ -32,3 +32,4 @@ registro:
   min_fotogramas: 3             # un daño debe verse en al menos N fotogramas para registrarse
   max_ausencia: 30              # fotogramas sin ver un daño antes de darlo por terminado
   tolerancia_gps_s: 5.0         # margen permitido fuera del rango de tiempo del GPX
+  radio_fusion_m: 8.0           # daños de la misma clase a menos de esto, en recorridos distintos, son el mismo

@@ -62,12 +62,27 @@ def _abrir_bd(ruta: Path):
 
 
 def _cmd_mapa(args: argparse.Namespace) -> int:
+    from tapahuecos.fusion import unicos
     from tapahuecos.salidas import generar_mapa
 
     with _abrir_bd(args.db) as bd:
         filas = bd.danos(args.recorrido)
+    if not args.todos:
+        filas = unicos(filas)
     ruta = generar_mapa(filas, args.salida or args.db.parent / "mapa.html", args.db.parent)
     print(f"Mapa con {len(filas)} daños: {ruta}")
+    return 0
+
+
+def _cmd_fusionar(args: argparse.Namespace) -> int:
+    from tapahuecos.fusion import fusionar_bd
+
+    with _abrir_bd(args.db) as bd:
+        registros, unicos = fusionar_bd(bd, args.radio, misma_clase=not args.cualquier_clase)
+    print(
+        f"{registros} registros → {unicos} daños únicos (radio {args.radio:g} m). "
+        "Regenere el mapa con `tapahuecos mapa`."
+    )
     return 0
 
 
@@ -156,7 +171,16 @@ def construir_parser() -> argparse.ArgumentParser:
     m = sub.add_parser("mapa", help="regenera el mapa HTML desde la base de datos")
     _argumentos_bd(m)
     m.add_argument("--salida", type=Path, help="ruta del HTML (por defecto junto a la BD)")
+    m.add_argument("--todos", action="store_true",
+                   help="un punto por registro, sin agrupar los daños repetidos entre recorridos")
     m.set_defaults(funcion=_cmd_mapa)
+
+    f = sub.add_parser("fusionar", help="agrupa el mismo daño registrado en varios recorridos")
+    f.add_argument("--db", type=Path, default=BD_PREDETERMINADA, help="base de datos SQLite")
+    f.add_argument("--radio", type=float, default=8.0, help="distancia máxima en metros")
+    f.add_argument("--cualquier-clase", action="store_true",
+                   help="agrupar aunque la clase no coincida (por defecto debe coincidir)")
+    f.set_defaults(funcion=_cmd_fusionar)
 
     e = sub.add_parser("exportar", help="exporta la base de datos a CSV")
     _argumentos_bd(e)

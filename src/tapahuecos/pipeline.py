@@ -15,6 +15,7 @@ import numpy as np
 from tapahuecos.config import Config
 from tapahuecos.detector import Deteccion
 from tapahuecos.entrada import FuenteVideo, resolver_inicio
+from tapahuecos.fusion import fusionar_bd, unicos
 from tapahuecos.gps import Recorrido
 from tapahuecos.medicion import Medidor
 from tapahuecos.registro import BaseDatos, GestorDanos, Observacion
@@ -182,8 +183,11 @@ def procesar(
                 cv2.destroyAllWindows()
         segundos = time.perf_counter() - t0
 
-        todas = bd.danos()  # el mapa y el CSV acumulan todos los recorridos de la carpeta
-        mapa = generar_mapa(todas, carpeta_salida / "mapa.html", carpeta_salida)
+        # El mapa y el CSV acumulan todos los recorridos de la carpeta. El mapa muestra
+        # cada daño una vez aunque se haya registrado en varios recorridos.
+        fusionar_bd(bd, cfg.registro.radio_fusion_m)
+        todas = bd.danos()
+        mapa = generar_mapa(unicos(todas), carpeta_salida / "mapa.html", carpeta_salida)
         csv = exportar_csv(todas, carpeta_salida / "danos.csv")
 
     return Resultado(

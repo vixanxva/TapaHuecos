@@ -63,7 +63,8 @@ Todos los resultados quedan en `salidas/`: `*_anotado.mp4`, `recortes/`, `danos.
 | Comando | Qué hace |
 |---|---|
 | `tapahuecos procesar` | Procesa un video (`--video`) o la cámara en vivo (`--camara 0`). |
-| `tapahuecos mapa` | Regenera el mapa HTML desde la base de datos. |
+| `tapahuecos mapa` | Regenera el mapa HTML desde la base de datos (`--todos` para no agrupar repetidos). |
+| `tapahuecos fusionar` | Agrupa el mismo daño registrado en varios recorridos (`--radio` en metros). |
 | `tapahuecos exportar` | Exporta la base de datos a CSV. |
 | `tapahuecos resumen` | Tabla de daños por clase. |
 | `tapahuecos revisar` | Revisión manual de cada recorte (para las métricas de campo). |
