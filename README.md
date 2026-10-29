@@ -72,6 +72,17 @@ Todos los resultados quedan en `salidas/`: `*_anotado.mp4`, `recortes/`, `danos.
 
 Los parámetros (umbral de confianza, salto de fotogramas, zona horaria, segmentación, calibración) están en [config.yaml](config.yaml).
 
+## Demo sin videos reales
+
+Mientras no haya recorridos grabados, `scripts/demo.py` arma un video con imágenes de RDD2022 (prefiere las que tienen huecos etiquetados) y un GPX simulado por la Avenida Primera de Montería, para mostrar el sistema de punta a punta:
+
+```bash
+python scripts/demo.py --imagenes datos/rdd_yolo/images/test
+tapahuecos procesar --video datos/demo/VID_AAAAMMDD_HHMMSS.mp4 --gpx datos/demo/VID_AAAAMMDD_HHMMSS_demo.gpx --pesos modelos/best_rdd.pt --salida salidas/demo
+```
+
+El script imprime el segundo comando con los nombres reales (`--help` muestra las opciones). Los resultados son de demostración, no de campo: las imágenes no son de Montería y el recorrido GPS es simulado.
+
 ## Entrenamiento
 
 Se entrena en Google Colab (GPU T4 gratuita) en dos fases: primero con RDD2022 y luego un ajuste fino con fotos propias de Montería etiquetadas en Roboflow.
