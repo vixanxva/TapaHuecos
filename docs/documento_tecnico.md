@@ -162,6 +162,8 @@ El programa avisa si el video y el GPX no coinciden en el tiempo, que es el erro
 
 **Regla de registro único:** se agrupan las observaciones por ID de seguimiento. Cuando un daño deja de verse durante `max_ausencia` fotogramas, o cuando termina el video, se guarda **una vez**, con la observación de mayor confianza, siempre que haya aparecido en al menos `min_fotogramas` fotogramas. Esto descarta las detecciones espurias de un solo cuadro.
 
+**Daños repetidos entre recorridos.** Si la misma calle se recorre varias veces, cada recorrido registra el mismo hueco. `fusion.py` agrupa los registros de la misma clase que están a menos de `radio_fusion_m` metros (8 m por defecto) y que provienen de recorridos distintos, y les asigna el mismo `grupo`. La agrupación se hace alrededor de semillas, sin encadenar, para que una grieta larga registrada por tramos no termine convertida en un único daño. El mapa y el resumen muestran daños únicos; la base de datos y el CSV conservan todos los registros.
+
 ### 5.7 Salidas
 
 Todo queda en la carpeta de salida (`salidas/` por defecto):
@@ -172,7 +174,7 @@ Todo queda en la carpeta de salida (`salidas/` por defecto):
 | `recortes/` | Un `.jpg` por daño, con su contorno dibujado. |
 | `danos.db` | Base de datos SQLite. Acumula todos los recorridos procesados en esa carpeta. |
 | `danos.csv` | La misma información, para Excel o pandas. |
-| `mapa.html` | Mapa de OpenStreetMap con una capa por tipo de daño; al hacer clic en un punto se ven sus datos y su recorte. |
+| `mapa.html` | Mapa de OpenStreetMap con una capa por tipo de daño y un punto por daño único; al hacer clic en un punto se ven sus datos, su recorte y en cuántos recorridos se registró. |
 
 ## 6. Evaluación y métricas
 

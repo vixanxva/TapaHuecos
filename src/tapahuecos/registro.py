@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS danos (
     x1 INTEGER NOT NULL, y1 INTEGER NOT NULL, x2 INTEGER NOT NULL, y2 INTEGER NOT NULL,
     recorte         TEXT NOT NULL,             -- ruta relativa a la carpeta de la base de datos
     verificado      INTEGER CHECK (verificado IN (0, 1)),  -- NULL sin revisar, 1 real, 0 falso
+    grupo           INTEGER,                   -- el mismo daño visto en varios recorridos
     UNIQUE (recorrido_id, track_id)
 );
 
@@ -73,6 +74,14 @@ class BaseDatos:
         self.con.row_factory = sqlite3.Row
         self.con.execute("PRAGMA foreign_keys = ON")
         self.con.executescript(ESQUEMA)
+        self._migrar()
+
+    def _migrar(self) -> None:
+        """Agrega a bases de datos creadas con versiones anteriores las columnas nuevas."""
+        columnas = {fila["name"] for fila in self.con.execute("PRAGMA table_info(danos)")}
+        if "grupo" not in columnas:
+            self.con.execute("ALTER TABLE danos ADD COLUMN grupo INTEGER")
+            self.con.commit()
 
     def nuevo_recorrido(self, video: str, gpx: str | None, modelo: str) -> int:
         cursor = self.con.execute(
@@ -120,6 +129,12 @@ class BaseDatos:
 
     def marcar(self, dano_id: int, real: bool) -> None:
         self.con.execute("UPDATE danos SET verificado = ? WHERE id = ?", (int(real), dano_id))
+        self.con.commit()
+
+    def asignar_grupos(self, grupos: dict[int, int]) -> None:
+        self.con.executemany(
+            "UPDATE danos SET grupo = ? WHERE id = ?", [(g, i) for i, g in grupos.items()]
+        )
         self.con.commit()
 
     def cerrar(self) -> None:

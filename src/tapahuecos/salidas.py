@@ -78,9 +78,11 @@ class EscritorVideo:
 def _popup(fila: dict, ruta_imagen: str) -> str:
     area = f"{fila['area_m2']:.3f} m²" if fila["area_m2"] is not None else f"{fila['area_px']} px"
     verificado = {None: "sin revisar", 1: "real", 0: "falso positivo"}[fila["verificado"]]
+    registros = fila.get("registros", 1)
     return (
         f"<b>{html.escape(fila['clase'])} – {html.escape(fila['nombre_clase'])}</b><br>"
-        f"Confianza: {fila['confianza']:.2f}<br>"
+        + (f"Registrado en {registros} recorridos<br>" if registros > 1 else "")
+        + f"Confianza: {fila['confianza']:.2f}<br>"
         f"Área aprox.: {area}<br>"
         f"Hora (UTC): {html.escape(fila['instante_utc'] or '—')}<br>"
         f"Video: {html.escape(Path(fila['video']).name)} @ {fila['tiempo_video_s']:.1f} s<br>"
@@ -137,16 +139,18 @@ def exportar_csv(filas: list[dict], ruta: Path) -> Path:
 
 
 def resumen(filas: list[dict]):
-    """Tabla por clase: cantidad, área total y media, porcentaje con GPS y revisión."""
+    """Tabla por clase: registros, daños únicos, área total y media, porcentaje con GPS y revisión."""
     import pandas as pd
 
     if not filas:
         return pd.DataFrame()
     df = pd.DataFrame(filas)
+    df["grupo_unico"] = df["grupo"].fillna(df["id"]) if "grupo" in df else df["id"]
     return (
         df.groupby(["clase", "nombre_clase"])
         .agg(
             cantidad=("id", "count"),
+            unicos=("grupo_unico", "nunique"),
             area_total_m2=("area_m2", "sum"),
             area_media_m2=("area_m2", "mean"),
             con_gps=("latitud", lambda s: s.notna().mean()),

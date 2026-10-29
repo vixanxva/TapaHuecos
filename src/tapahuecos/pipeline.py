@@ -15,6 +15,7 @@ import numpy as np
 from tapahuecos.config import Config
 from tapahuecos.detector import Deteccion
 from tapahuecos.entrada import FuenteVideo, resolver_inicio
+from tapahuecos.fusion import fusionar_bd, unicos
 from tapahuecos.gps import Recorrido
 from tapahuecos.medicion import Medidor
 from tapahuecos.registro import BaseDatos, GestorDanos, Observacion
@@ -54,7 +55,7 @@ def _verificar_solape(inicio: datetime, duracion_s: float, recorrido: Recorrido)
     fin = inicio + timedelta(seconds=duracion_s)
     if fin < recorrido.inicio or inicio > recorrido.fin:
         log.warning(
-            "El video (%s → %s) no coincide en el tiempo con el GPX (%s → %s). "
+            "El video (%s a %s) no coincide en el tiempo con el GPX (%s a %s). "
             "Revise utc_offset_horas, desfase_gps_s o indique --inicio.",
             inicio.isoformat(timespec="seconds"), fin.isoformat(timespec="seconds"),
             recorrido.inicio.isoformat(timespec="seconds"),
@@ -182,8 +183,11 @@ def procesar(
                 cv2.destroyAllWindows()
         segundos = time.perf_counter() - t0
 
-        todas = bd.danos()  # el mapa y el CSV acumulan todos los recorridos de la carpeta
-        mapa = generar_mapa(todas, carpeta_salida / "mapa.html", carpeta_salida)
+        # El mapa y el CSV acumulan todos los recorridos de la carpeta. El mapa muestra
+        # cada daño una vez aunque se haya registrado en varios recorridos.
+        fusionar_bd(bd, cfg.registro.radio_fusion_m)
+        todas = bd.danos()
+        mapa = generar_mapa(unicos(todas), carpeta_salida / "mapa.html", carpeta_salida)
         csv = exportar_csv(todas, carpeta_salida / "danos.csv")
 
     return Resultado(

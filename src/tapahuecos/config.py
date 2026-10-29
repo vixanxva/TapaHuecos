@@ -49,6 +49,7 @@ class ConfigRegistro:
     min_fotogramas: int = 3
     max_ausencia: int = 30
     tolerancia_gps_s: float = 5.0
+    radio_fusion_m: float = 8.0
 
 
 @dataclass
