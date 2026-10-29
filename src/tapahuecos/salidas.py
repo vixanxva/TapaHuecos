@@ -30,6 +30,7 @@ def _texto_con_fondo(imagen: np.ndarray, texto: str, origen: tuple[int, int], co
     margen = round(4 * escala)
     (ancho, alto), base = cv2.getTextSize(texto, _FUENTE, escala, grosor)
     x, y = origen
+    x = max(0, min(x, imagen.shape[1] - ancho - 2 * margen))  # que no se salga por la derecha
     y = max(y, alto + base + margen)
     cv2.rectangle(imagen, (x, y - alto - base - margen), (x + ancho + 2 * margen, y), color, cv2.FILLED)
     cv2.putText(
