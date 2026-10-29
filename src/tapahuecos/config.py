@@ -25,6 +25,7 @@ class ConfigVideo:
     inicio_grabacion: str | None = None
     utc_offset_horas: float = -5.0
     desfase_gps_s: float = 0.0
+    rotacion: int = 0  # grados en sentido horario: 0, 90, 180 o 270
 
 
 @dataclass

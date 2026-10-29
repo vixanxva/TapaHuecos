@@ -14,8 +14,17 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
-# VID_20261029_143015.mp4 (Android), 20261029_143015.mp4, PXL_20261029_143015123.mp4
-_PATRON_FECHA = re.compile(r"(20\d{6})[_-]?(\d{6})")
+# VID_20261029_143015.mp4 (Android), 20261029_143015.mp4 (Samsung), PXL_20261029_143015123.mp4 (Pixel).
+# Los dígitos deben ir solos (fecha + hora + milisegundos opcionales) para no tomar trozos de otros números.
+# VID-20261029-WA0001.mp4 (WhatsApp) no trae hora y no coincide.
+_PATRON_FECHA = re.compile(r"(?<!\d)(20\d{6})[_-]?(\d{6})(?:\d{3})?(?!\d)")
+
+# Grados en sentido horario → código de cv2.rotate
+_ROTACIONES = {
+    90: cv2.ROTATE_90_CLOCKWISE,
+    180: cv2.ROTATE_180,
+    270: cv2.ROTATE_90_COUNTERCLOCKWISE,
+}
 
 
 @dataclass
@@ -26,10 +35,18 @@ class Fotograma:
 
 
 class FuenteVideo:
-    """Archivo de video o cámara (índice entero) leído con OpenCV."""
+    """Archivo de video o cámara (índice entero) leído con OpenCV.
 
-    def __init__(self, origen: str | Path | int):
+    OpenCV ya aplica la rotación guardada en los metadatos del video (CAP_PROP_ORIENTATION_AUTO
+    está activo por defecto). `rotacion` (0, 90, 180 o 270, en sentido horario) es un giro
+    adicional para videos sin metadatos o grabados con la cámara al revés.
+    """
+
+    def __init__(self, origen: str | Path | int, rotacion: int = 0):
+        if rotacion not in (0, *_ROTACIONES):
+            raise ValueError(f"rotacion debe ser 0, 90, 180 o 270, no {rotacion}")
         self.origen = origen
+        self.rotacion = rotacion
         self.es_camara = isinstance(origen, int)
         self._cap = cv2.VideoCapture(origen if self.es_camara else str(origen))
         if not self._cap.isOpened():
@@ -48,11 +65,26 @@ class FuenteVideo:
         """
         cada_n = max(1, cada_n)
         indice = 0
+        anterior = -1.0
+        usar_marca = not self.es_camara
         while self._cap.grab():
+            if usar_marca:
+                # Tras grab(), POS_MSEC es la marca del fotograma recién capturado (no la del siguiente).
+                # Con tasa variable (celulares) es más exacta que indice / fps.
+                tiempo = self._cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+                if tiempo < 0 or (indice > 0 and tiempo <= anterior):
+                    log.warning(
+                        "Marca de tiempo no fiable en el fotograma %d de %s; se usa índice / fps.",
+                        indice, self.origen,
+                    )
+                    usar_marca = False
+                anterior = tiempo
             if indice % cada_n == 0:
                 ok, imagen = self._cap.retrieve()
                 if ok:
-                    yield Fotograma(indice, indice / self.fps, imagen)
+                    if self.rotacion:
+                        imagen = cv2.rotate(imagen, _ROTACIONES[self.rotacion])
+                    yield Fotograma(indice, tiempo if usar_marca else indice / self.fps, imagen)
             indice += 1
 
     def cerrar(self) -> None:

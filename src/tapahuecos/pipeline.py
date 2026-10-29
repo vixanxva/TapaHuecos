@@ -82,7 +82,7 @@ def procesar(
 
     cada_n = max(1, cfg.video.cada_n_fotogramas)
     ruta_bd = carpeta_salida / "danos.db"
-    with BaseDatos(ruta_bd) as bd, FuenteVideo(origen) as fuente:
+    with BaseDatos(ruta_bd) as bd, FuenteVideo(origen, cfg.video.rotacion) as fuente:
         inicio = None
         if not fuente.es_camara:
             inicio = resolver_inicio(

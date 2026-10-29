@@ -147,9 +147,13 @@ Limitaciones que hay que declarar:
 
 El celular graba el recorrido en un archivo GPX (un punto por segundo, cada uno con hora UTC) mientras la cámara graba el video. Para ubicar un fotograma:
 
-1. **Hora de inicio del video.** Se toma, en este orden, del parámetro `--inicio` (o de `video.inicio_grabacion`), de la fecha en el nombre del archivo (`VID_20261029_143015.mp4`) o, como último recurso, de la fecha de modificación del archivo menos su duración. La hora local se convierte a UTC con `utc_offset_horas` (−5 en Colombia, que no tiene horario de verano).
-2. **Hora del fotograma** = inicio + índice ÷ fps + `desfase_gps_s`.
+1. **Hora de inicio del video.** Se toma, en este orden, del parámetro `--inicio` (o de `video.inicio_grabacion`), de la fecha en el nombre del archivo (`VID_20261029_143015.mp4` en Android, `PXL_20261029_143015123.mp4` en Pixel, `20261029_143015.mp4` en Samsung) o, como último recurso, de la fecha de modificación del archivo menos su duración. La hora local se convierte a UTC con `utc_offset_horas` (−5 en Colombia, que no tiene horario de verano).
+2. **Hora del fotograma** = inicio + tiempo del fotograma + `desfase_gps_s`. Los celulares graban con tasa de fotogramas variable, así que `índice ÷ fps` se desfasa a lo largo de un video largo. Por eso se usa la marca de tiempo real de cada fotograma (`CAP_PROP_POS_MSEC`). Solo se vuelve a `índice ÷ fps` con cámaras en vivo o si la marca no es fiable (vale cero o deja de crecer).
 3. **Posición:** interpolación lineal entre los dos puntos del GPX más cercanos en el tiempo (`gps.py`). Si el GPS dejó de registrar más de 30 s, o la hora cae fuera del recorrido, el daño se guarda sin coordenada en lugar de recibir una coordenada inventada.
+
+Los videos de WhatsApp (`VID-20261029-WA0001.mp4`) traen la fecha pero no la hora, así que el nombre no sirve y hay que indicar `--inicio`.
+
+**Rotación.** OpenCV ya gira el video según los metadatos de orientación del celular. Si el video llega girado de todos modos (no trae metadatos o la cámara se montó al revés), `video.rotacion` aplica un giro adicional de 90, 180 o 270 grados en sentido horario a cada fotograma. La calibración debe hacerse con el mismo giro (`calibrar_homografia.py --rotacion`).
 
 El programa avisa si el video y el GPX no coinciden en el tiempo, que es el error más común (relojes desfasados o zona horaria mal configurada). La [guía de captura](guia_captura.md) explica cómo grabar ambos correctamente.
 

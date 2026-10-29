@@ -27,6 +27,8 @@ import numpy as np
 
 PIXELES_POR_METRO_VISTA = 100
 ORDEN = ["inferior-izquierda", "inferior-derecha", "superior-derecha", "superior-izquierda"]
+# Igual que video.rotacion: grados en sentido horario → código de cv2.rotate
+ROTACIONES = {90: cv2.ROTATE_90_CLOCKWISE, 180: cv2.ROTATE_180, 270: cv2.ROTATE_90_COUNTERCLOCKWISE}
 
 
 def cargar_imagen(args: argparse.Namespace) -> np.ndarray:
@@ -39,6 +41,8 @@ def cargar_imagen(args: argparse.Namespace) -> np.ndarray:
         cap.release()
     if imagen is None:
         raise SystemExit("No se pudo leer la imagen o el fotograma indicado.")
+    if args.rotacion:
+        imagen = cv2.rotate(imagen, ROTACIONES[args.rotacion])
     return imagen
 
 
@@ -84,6 +88,8 @@ def main() -> None:
     p.add_argument("--ancho", type=float, required=True, help="ancho real del rectángulo (m)")
     p.add_argument("--largo", type=float, required=True,
                    help="largo real del rectángulo en el sentido de la vía (m)")
+    p.add_argument("--rotacion", type=int, default=0, choices=[0, 90, 180, 270],
+                   help="giro en sentido horario; use el mismo valor de video.rotacion")
     p.add_argument("--puntos", help="'x1,y1;x2,y2;x3,y3;x4,y4' para no abrir ventana")
     p.add_argument("--salida", type=Path, default=Path("calibracion/homografia.npy"))
     args = p.parse_args()
