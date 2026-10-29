@@ -190,8 +190,8 @@ Se reportan tres grupos de métricas, cada uno generado por un comando:
 **3. De funcionamiento:**
 
 - **Velocidad:** fotogramas por segundo en el portátil del equipo, con y sin GPU. El programa la imprime al terminar.
-- **Error de área:** se miden con cinta métrica entre 10 y 20 huecos y se compara su área real con la estimada (error porcentual medio).
-- **Error de posición:** distancia entre la coordenada registrada y la real para esos mismos huecos.
+- **Error de área:** se miden con cinta métrica entre 10 y 20 huecos y se compara su área real con la estimada (`scripts/evaluar.py area --medidos datos/huecos_medidos.csv`). El CSV tiene las columnas `latitud,longitud,largo_m,ancho_m,area_m2,foto`; si `area_m2` está vacía se toma la de una elipse, π/4 · largo · ancho. Cada hueco se empareja uno a uno con el D40 registrado más cercano a menos de 10 m (`--radio`), sin contar los marcados como falsos positivos, y se reportan la media, la mediana y el máximo de |estimada − real| / real, junto con una gráfica de área real contra estimada (si está instalado matplotlib).
+- **Error de posición:** distancia entre la coordenada registrada y la real para esos mismos pares; el mismo comando reporta su media, mediana y máximo.
 
 No se fija de antemano un valor objetivo de mAP. Se reporta lo obtenido y se compara con el modelo de la fase 1 (solo RDD2022), para mostrar cuánto aportan las fotos locales.
 
