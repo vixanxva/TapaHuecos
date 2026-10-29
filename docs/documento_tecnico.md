@@ -122,6 +122,8 @@ Los modelos `n` (nano) son más rápidos y los `s` (small), más precisos. Si el
 
 Para ganar velocidad se procesa uno de cada N fotogramas (`video.cada_n_fotogramas`, 2 por defecto). El seguidor tolera ese salto.
 
+**Región de interés.** En los videos grabados en vertical, la vía ocupa solo la parte inferior de la imagen; arriba hay cielo, árboles o edificios. Como YOLO reduce cada imagen a 640 px, analizar el fotograma completo hace que los huecos queden pequeños. Con `video.region` (por ejemplo, `[0, 0.45, 1, 1]`) YOLO analiza solo esa franja, así que los daños ocupan más píxeles y el procesamiento es más rápido. Los recuadros se devuelven en coordenadas del fotograma completo, por lo que la segmentación, la homografía y el registro no cambian. El video anotado muestra el borde de la región.
+
 ### 5.4 Segmentación y área
 
 Dentro de cada recuadro, `segmentacion.py` separa los píxeles del daño:
