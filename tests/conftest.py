@@ -1,7 +1,14 @@
+import importlib.util
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import gpxpy.gpx
 import pytest
+
+_RUTA_GENERADOR = Path(__file__).parent / "fixtures" / "generar.py"
+_spec = importlib.util.spec_from_file_location("generar_fixtures", _RUTA_GENERADOR)
+generar_fixtures = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(generar_fixtures)
 
 
 @pytest.fixture
@@ -20,3 +27,9 @@ def gpx_recto(tmp_path):
     ruta = tmp_path / "recorrido.gpx"
     ruta.write_text(gpx.to_xml(), encoding="utf-8")
     return ruta, inicio
+
+
+@pytest.fixture(scope="session")
+def datos_prueba(tmp_path_factory):
+    """Video, imagen, GPX y verdad de campo de tests/fixtures/generar.py, creados una vez por sesión."""
+    return generar_fixtures.generar(tmp_path_factory.mktemp("fixtures"))

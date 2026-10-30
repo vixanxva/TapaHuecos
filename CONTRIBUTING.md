@@ -27,6 +27,14 @@
 - Los parámetros ajustables van en `config.yaml`, no fijos en el código.
 - El código, los comentarios y la documentación se escriben en español.
 
+### Trabajo en paralelo
+
+- **Una tarea, sus archivos.** Cada issue dice qué archivos toca; un Pull Request no modifica archivos de otra tarea. Si hace falta, se abre otra issue.
+- **Los contratos no se cambian de paso.** Las firmas, tipos y columnas de [docs/contratos.md](docs/contratos.md) son lo que permite trabajar cada módulo por separado. Cambiarlos va en un Pull Request aparte, que actualiza ese documento y se avisa al equipo antes de fusionarlo.
+- **Las dependencias no se tocan sin acordarlo.** Se declaran una sola vez en `pyproject.toml` (`requirements.txt` solo apunta allí). Agregar o cambiar una se discute en la issue primero.
+- **Cada tarea trae sus datos de prueba.** Si un módulo necesita un video, GPX, imagen o CSV de ejemplo, se genera en [tests/fixtures/generar.py](tests/fixtures/generar.py), no se sube el archivo.
+- **CI en verde para fusionar.** Ningún Pull Request se fusiona con la CI fallando.
+
 ## Entorno
 
 ```bash
