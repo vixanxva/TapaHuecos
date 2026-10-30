@@ -19,9 +19,15 @@ salidas/
 reportes/
 runs/
 
-# Pesos que Ultralytics descarga automáticamente
-yolov8*.pt
-yolo11*.pt
+# Pesos y videos: nunca en el repositorio, estén donde estén
+*.pt
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Datos de prueba generados por tests/fixtures/generar.py
+tests/fixtures/generados/
 
 # Editor / sistema
 .vscode/
