@@ -138,3 +138,7 @@ TapaHuecos/
 **Hace:** detectar cuatro tipos de daño en imágenes y video, resaltarlos y estimar su área, ubicarlos por GPS, registrarlos y mostrarlos en un mapa, y reportar métricas con videos reales.
 
 **No hace:** medir la profundidad de los huecos (no es confiable con una sola cámara), procesar en tiempo real dentro del vehículo (el modo cámara funciona, pero a pocos fps en un portátil sin GPU), ni ofrecer interfaz gráfica, servidor web, app móvil o envío automático de reportes. Ver la sección 2 del [documento técnico](docs/documento_tecnico.md).
+
+## Licencia
+
+Todos los derechos reservados: el código se publica solo para consulta y no puede usarse, copiarse ni redistribuirse sin permiso por escrito. Ver [LICENSE](LICENSE). Los datos de terceros (RDD2022) y las dependencias (Ultralytics, AGPL-3.0) mantienen sus propias licencias.
