@@ -2,6 +2,8 @@
 
 Esta carpeta está excluida de Git. Los archivos se comparten por la carpeta de Google Drive del equipo o por Roboflow.
 
+**Carpeta de Drive del equipo:** https://drive.google.com/drive/folders/1Brwtdk58xGeuQZ6DTQ9rDuyQA4E9Vcl7?usp=sharing (`videos/`, `gpx/`, `datasets/`, `modelos/`)
+
 ```
 datos/
 ├── videos/          VID_AAAAMMDD_HHMMSS.mp4 de los recorridos
