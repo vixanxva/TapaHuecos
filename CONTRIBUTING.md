@@ -15,7 +15,9 @@
    ruff check src scripts tests
    pytest
    ```
-5. Abrir el Pull Request hacia `main`, completar la plantilla y enlazar la issue (`Closes #12`).
+5. Abrir el Pull Request hacia `main`, completar la plantilla y enlazar la issue:
+   - `Closes #12` solo si el PR cumple todo el "Terminado cuando" de la issue. Al fusionarlo, GitHub la cierra.
+   - `Refs #12` si queda algo pendiente, como la validación con datos reales. La issue sigue abierta y se cierra a mano cuando se cumple el criterio, con las casillas marcadas y la evidencia (captura, métrica o enlace a Drive).
 6. Al menos **un integrante distinto** al autor revisa y aprueba. La CI debe pasar.
 7. Fusionar con *Squash and merge* y borrar la rama.
 
