@@ -59,9 +59,10 @@ En los dos casos:
 3. Después se pone `develop` al día con `main`, para que el próximo Pull Request muestre solo lo nuevo:
    ```bash
    git switch develop && git pull
-   git merge origin/main
+   git merge --no-edit origin/main
    git push
    ```
+   Con `--no-edit` Git no abre el editor (Vim). Si se abre y se cierra la ventana, el merge queda a medias: se termina con `git commit -m "Sincronizar develop con main"`.
 
 ## Reglas
 
