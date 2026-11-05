@@ -20,11 +20,20 @@ video:
 segmentacion:
   clahe_limite: 2.0             # realce de contraste local
   clahe_rejilla: 8
+  clahe_tesela_min_px: 32       # en recortes pequeños la rejilla se reduce para que cada tesela mida al menos esto
   kernel_suavizado: 5           # desenfoque gaussiano (impar)
   kernel_morfologico: 5         # apertura / cierre para limpiar la máscara
   kernel_grietas: 15            # tamaño del black-hat que resalta grietas finas
   contraste_minimo: 4.0         # recortes más planos que esto no se segmentan
-  area_minima_px: 40            # contornos más pequeños se descartan como ruido
+  area_minima_px: 40            # contornos (en grietas, grupos de tramos) más pequeños se descartan como ruido
+  fraccion_centro: 0.5          # huecos: lado de la zona central del recuadro; se conservan las regiones que la tocan
+  percentil_tope_brillo: 60     # grietas y malla: brillos por encima de este percentil se recortan (marcas viales)
+  percentil_semilla: 98         # grietas: los píxeles más fuertes del black-hat inician la grieta...
+  percentil_crecimiento: 92     # ...y crece por los vecinos por encima de este percentil (histéresis)
+  realce_minimo: 8.0            # grietas: contraste mínimo de una semilla (niveles de gris)
+  union_grietas_px: 5           # grietas: distancia para agrupar los tramos de una grieta punteada
+  alargamiento_minimo: 2.0      # grietas: un grupo se conserva si su largo / ancho llega a esto...
+  llenado_maximo: 0.5           # ...o si llena poco su rectángulo (grieta curva o ramificada)
 
 calibracion:
   homografia: calibracion/homografia.npy   # generada con scripts/calibrar_homografia.py
