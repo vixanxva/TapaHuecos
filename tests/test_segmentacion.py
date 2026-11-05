@@ -110,6 +110,64 @@ def test_grieta_punteada_se_conserva():
     assert len(tramos) >= 8
 
 
+
+def _asfalto_rugoso(alto=200, ancho=200, semilla=0):
+    grano = cv2.GaussianBlur(np.random.default_rng(semilla).normal(0, 1, (alto, ancho)), (0, 0), 1.2)
+    gris = np.clip(150 + grano / grano.std() * 10, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(gris, cv2.COLOR_GRAY2BGR)
+
+
+def _dibujar_malla(imagen, x0, x1, y0, y1, semilla=0, celda=14):
+    """Red de grietas poligonal (celdas de ~celda px con vértices desplazados) en un rectángulo."""
+    azar = np.random.default_rng(semilla)
+    ys, xs = np.arange(y0, y1 + celda, celda), np.arange(x0, x1 + celda, celda)
+    vertices = {}
+    for i, y in enumerate(ys):
+        for j, x in enumerate(xs):
+            dx, dy = azar.integers(-4, 5), azar.integers(-4, 5)
+            vertices[i, j] = (int(np.clip(x + dx, x0, x1)), int(np.clip(y + dy, y0, y1)))
+    for (i, j), p in vertices.items():
+        for q in (vertices.get((i + 1, j)), vertices.get((i, j + 1))):
+            if q is not None:
+                cv2.line(imagen, p, q, (70, 70, 70), 2)
+
+
+def _sombrear(imagen, zona):
+    # Sombra de árbol o vehículo: más oscura y azulada (la ilumina el cielo).
+    imagen[zona > 0] = (imagen[zona > 0] * np.array([0.55, 0.42, 0.38])).astype(np.uint8)
+
+
+def test_malla_junto_a_sombra_en_asfalto_rugoso():
+    # Con black-hat y Otsu, el grano del asfalto dentro de la sombra se marcaba entero como malla.
+    imagen = _asfalto_rugoso(semilla=3)
+    _dibujar_malla(imagen, 110, 199, 0, 199)
+    sombra = np.zeros(imagen.shape[:2], np.uint8)
+    cv2.ellipse(sombra, (30, 100), (75, 120), 0, 0, 360, 255, -1)
+    _sombrear(imagen, sombra)
+    mascara = segmentar(imagen, "D20", ConfigSegmentacion()).mascara > 0
+    assert mascara[:, 120:].mean() > 0.8
+    assert mascara[sombra > 0].mean() < 0.15
+
+
+def test_malla_parcialmente_en_sombra():
+    # El tramo de malla en sombra sigue siendo malla; el resto de la sombra no.
+    imagen = _asfalto(semilla=9)
+    _dibujar_malla(imagen, 80, 199, 0, 199)
+    sombra = np.zeros(imagen.shape[:2], np.uint8)
+    sombra[:, :101] = 255
+    _sombrear(imagen, sombra)
+    mascara = segmentar(imagen, "D20", ConfigSegmentacion()).mascara > 0
+    assert mascara[:, 85:].mean() > 0.8
+    assert mascara[:, :70].mean() < 0.15
+
+
+@pytest.mark.parametrize("clase", ["D00", "D20", "D40"])
+@pytest.mark.parametrize("forma", [(3, 3, 3), (3, 40, 3), (40, 3, 3), (5, 7, 3), (60, 60)])
+def test_recortes_degenerados_no_fallan(clase, forma):
+    imagen = np.random.default_rng(0).integers(0, 255, forma, dtype=np.uint8)
+    assert segmentar(imagen, clase, ConfigSegmentacion()).mascara.shape == forma[:2]
+    assert segmentar(np.full(forma, 120, np.uint8), clase, ConfigSegmentacion()).area_px == 0
+
 # Recortes reales de RDD2022 (licencia y fuente en tests/datos/README.md). Cada uno fallaba
 # con la segmentación anterior; las comprobaciones son de comportamiento, no de píxeles exactos.
 def _recorte_real(nombre):
