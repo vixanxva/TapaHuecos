@@ -35,18 +35,49 @@ class ConfigSegmentacion:
     clahe_rejilla: int = 8
     kernel_suavizado: int = 5
     kernel_morfologico: int = 5
-    kernel_grietas: int = 15
     contraste_minimo: float = 4.0
     area_minima_px: int = 40
     clahe_tesela_min_px: int = 32
     fraccion_centro: float = 0.5
-    percentil_tope_brillo: float = 60.0
-    percentil_semilla: float = 98.0
-    percentil_crecimiento: float = 92.0
-    realce_minimo: float = 8.0
-    union_grietas_px: int = 5
-    alargamiento_minimo: float = 2.0
-    llenado_maximo: float = 0.5
+    # Huecos (D40)
+    huecos_desborde_esquinas: float = 0.25
+    huecos_nucleo_minimo: float = 0.35
+    huecos_rareza_alta: float = 4.0
+    huecos_rareza_baja: float = 2.0
+    huecos_rareza_relativa: float = 0.3
+    huecos_alternativa_nucleo: float = 0.15
+    huecos_alternativa_esquinas: float = 0.3
+    # Grietas (D00, D10)
+    grieta_valle_dist_max: int = 4
+    grieta_asimetria: float = 0.5
+    grieta_asimetria_tolerancia: float = 2.0
+    grieta_escala_percentil: float = 90.0
+    grieta_escala_minima: float = 3.0
+    grieta_pintura_delta: float = 20.0
+    grieta_pintura_area_min: int = 30
+    grieta_pintura_radio: int = 3
+    grieta_pintura_frac: float = 0.3
+    grieta_cuadrado_ratio: float = 1.5
+    grieta_tramo_ventana: float = 0.06
+    grieta_tramo_umbral: float = 1.5
+    grieta_semilla_min: float = 1.0
+    grieta_hueco_max: float = 0.2
+    grieta_rama_exclusion: float = 0.15
+    grieta_rama_umbral: float = 2.0
+    grieta_rama_largo: float = 0.25
+    grieta_crecer_umbral: float = 1.3
+    grieta_crecer_pasos: int = 4
+    # Piel de cocodrilo (D20)
+    malla_lado_px: int = 192
+    malla_iluminacion_px: int = 41
+    malla_kernel_px: int = 5
+    malla_pintura_min: float = 30.0
+    malla_fraccion_grietas: float = 0.25
+    malla_sigma_px: float = 12.0
+    malla_densidad_rel: float = 0.7
+    malla_sombra_rel: float = 0.65
+    malla_sombra_azul: float = 0.1
+    malla_vegetacion_verde: float = 30.0
 
 
 @dataclass

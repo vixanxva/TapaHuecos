@@ -128,14 +128,15 @@ Para ganar velocidad se procesa uno de cada N fotogramas (`video.cada_n_fotogram
 
 Dentro de cada recuadro, `segmentacion.py` separa los píxeles del daño:
 
-1. Recorte del recuadro y conversión a escala de grises.
-2. Realce: CLAHE y suavizado gaussiano.
-3. Umbral según el tipo de daño:
-   - **Hueco (D40):** región oscura y compacta → umbral de Otsu invertido, luego apertura y cierre.
-   - **Grietas (D00, D10):** líneas finas → transformación *black-hat*, que resalta lo más oscuro y delgado que el elemento estructurante, y luego Otsu. No se aplica apertura, porque borraría la grieta.
-   - **Piel de cocodrilo (D20):** como las grietas, más un cierre grande que une la malla en una sola región.
-4. Contornos externos; se descartan los menores a `area_minima_px`.
-5. Máscara binaria rellena → **área en píxeles**.
+1. Recorte del recuadro. Los recortes casi uniformes (`contraste_minimo`) no se segmentan.
+2. Separación según el tipo de daño:
+   - **Hueco (D40):** CLAHE, suavizado gaussiano y umbral de Otsu en las dos polaridades, porque el hueco puede ser más oscuro que el asfalto (agujero, sombra) o más claro (base expuesta, polvo, agua que refleja el cielo). Gana la máscara que cubre el centro del recuadro y no su borde, y solo se conservan las regiones que tocan el centro. Si aun así la máscara invade las esquinas del recuadro (que en un recuadro ajustado son asfalto) o deja el centro casi vacío, se prueba otra: lo que se aparta del asfalto de las esquinas en brillo, color y textura.
+   - **Grietas (D00, D10):** se mide cuánto más oscuro es cada píxel que sus dos lados (profundidad de valle), en varias orientaciones y en unidades de la textura del recorte. Las marcas viales blancas o amarillas se detectan y se anulan los valles que forman sus bordes. Como YOLO encuadra la grieta de punta a punta, se busca el camino más oscuro a lo largo del recuadro (programación dinámica) y una posible rama; sus tramos con respuesta sostenida son la grieta.
+   - **Piel de cocodrilo (D20):** la malla es una región. Se mide la densidad local de grietas (black-hat pequeño, normalizado por la iluminación local) y se marca la zona donde supera la densidad media del recuadro. Después se quitan la pintura limpia, las sombras que cubren una parte minoritaria del recuadro y la vegetación.
+3. Contornos externos; en huecos y malla se descartan los menores a `area_minima_px`.
+4. Máscara binaria rellena → **área en píxeles**.
+
+Los parámetros de cada etapa están en la sección `segmentacion` de `config.yaml`. El método se ajustó con recortes etiquetados a mano de RDD2022 y se midió en una muestra aparte (issue #16).
 
 **De píxeles a m².** Por la perspectiva, un hueco lejano ocupa menos píxeles que uno cercano del mismo tamaño. Para corregirlo, `medicion.py` usa una **homografía** (una transformación proyectiva de la imagen al plano de la vía): cada contorno se proyecta al suelo y allí se mide su área en metros cuadrados. La homografía se calcula una sola vez con `scripts/calibrar_homografia.py`, marcando las cuatro esquinas de un rectángulo de medidas conocidas sobre la vía. El script guarda además una vista cenital para comprobar visualmente la calibración.
 
