@@ -233,11 +233,11 @@ TapaHuecos/
 
 ## 8. Organización del trabajo en GitHub
 
-- **Ramas:** `main` siempre funciona. Cada tarea se hace en una rama propia (`feature/…`, `fix/…`, `docs/…`) y entra a `main` por Pull Request, con al menos una revisión de otro integrante.
+- **Ramas:** solo `main` y `develop`; no se crean ramas por tarea. Todo se trabaja en `develop`. Lo que ya sirve pasa a `main` por Pull Request, con al menos una revisión de otro integrante, y lo que causa duda se queda en `develop`. `main` siempre funciona.
 - **Issues:** una por tarea, con la plantilla del repositorio. El [backlog](backlog.md) trae la lista inicial, agrupada por hito.
 - **Projects:** tablero con las columnas *Por hacer → En curso → En revisión → Hecho*.
 - **Hitos (milestones):** M1 Datos · M2 Modelo · M3 Pipeline · M4 Pruebas en campo · M5 Entrega.
-- **CI:** GitHub Actions ejecuta `ruff` y `pytest` en cada Pull Request.
+- **CI:** GitHub Actions ejecuta `ruff` y `pytest` en cada Pull Request y en cada subida a `develop` y a `main`.
 
 Los detalles están en [CONTRIBUTING.md](../CONTRIBUTING.md).
 
