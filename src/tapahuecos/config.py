@@ -38,6 +38,15 @@ class ConfigSegmentacion:
     kernel_grietas: int = 15
     contraste_minimo: float = 4.0
     area_minima_px: int = 40
+    clahe_tesela_min_px: int = 32
+    fraccion_centro: float = 0.5
+    percentil_tope_brillo: float = 60.0
+    percentil_semilla: float = 98.0
+    percentil_crecimiento: float = 92.0
+    realce_minimo: float = 8.0
+    union_grietas_px: int = 5
+    alargamiento_minimo: float = 2.0
+    llenado_maximo: float = 0.5
 
 
 @dataclass
