@@ -41,12 +41,17 @@ class ConfigSegmentacion:
     fraccion_centro: float = 0.5
     # Huecos (D40)
     huecos_desborde_esquinas: float = 0.25
-    huecos_nucleo_minimo: float = 0.35
+    huecos_nucleo_minimo: float = 0.65
     huecos_rareza_alta: float = 4.0
     huecos_rareza_baja: float = 2.0
     huecos_rareza_relativa: float = 0.3
     huecos_alternativa_nucleo: float = 0.15
     huecos_alternativa_esquinas: float = 0.3
+    huecos_convexo_max: float = 1.3
+    huecos_convexo_esquinas: float = 0.05
+    huecos_halo_solidez: float = 0.9
+    huecos_halo_area: float = 1.6
+    huecos_rareza_lado_px: int = 155
     # Grietas (D00, D10)
     grieta_valle_dist_max: int = 4
     grieta_asimetria: float = 0.5
@@ -60,6 +65,7 @@ class ConfigSegmentacion:
     grieta_cuadrado_ratio: float = 1.5
     grieta_tramo_ventana: float = 0.06
     grieta_tramo_umbral: float = 1.5
+    grieta_tramo_umbral_bajo: float = 1.15
     grieta_semilla_min: float = 1.0
     grieta_hueco_max: float = 0.2
     grieta_rama_exclusion: float = 0.15

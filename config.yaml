@@ -28,12 +28,17 @@ segmentacion:
   kernel_morfologico: 5         # apertura / cierre para limpiar la máscara
   fraccion_centro: 0.5          # lado de la zona central del recuadro; se conservan las regiones que la tocan
   huecos_desborde_esquinas: 0.25    # Otsu se revisa si cubre más de esta fracción de las esquinas (fuera de la elipse)...
-  huecos_nucleo_minimo: 0.35        # ...o menos de esta fracción del núcleo (elipse central de medio tamaño)
+  huecos_nucleo_minimo: 0.65        # ...o menos de esta fracción del núcleo (elipse central de medio tamaño)
   huecos_rareza_alta: 4.0           # rareza (desviaciones frente al asfalto de las esquinas) de las semillas del hueco
   huecos_rareza_baja: 2.0           # rareza mínima por la que crecen las semillas (histéresis)...
   huecos_rareza_relativa: 0.3       # ...que sube a esta fracción del percentil 95 de la rareza del núcleo
   huecos_alternativa_nucleo: 0.15   # la máscara por rareza se descarta si cubre menos que esto del núcleo...
   huecos_alternativa_esquinas: 0.3  # ...o más que esto de las esquinas
+  huecos_convexo_max: 1.3           # cada región se completa hasta su contorno convexo si área del casco ≤ esto × área...
+  huecos_convexo_esquinas: 0.05     # ...salvo que el casco agregue más de esta fracción de las esquinas
+  huecos_halo_solidez: 0.9          # si Otsu es así de compacta (área / casco)...
+  huecos_halo_area: 1.6             # ...y la rareza la contiene y solo la agranda hasta este factor, se queda Otsu
+  huecos_rareza_lado_px: 155        # la rareza de recortes con área mayor que este lado² se calcula reducida
   # Grietas (D00, D10)
   grieta_valle_dist_max: 4          # distancia (px) a cada lado para medir el valle: ancho máximo de grieta
   grieta_asimetria: 0.5             # penalización cuando los dos lados del valle difieren (borde de sombra, parche, pintura)...
@@ -46,7 +51,8 @@ segmentacion:
   grieta_pintura_frac: 0.3          # dentro de la pintura, es grieta lo más oscuro que asfalto + esto × (pintura − asfalto)
   grieta_cuadrado_ratio: 1.5        # con largo / ancho menor que esto se prueban los dos ejes para el camino
   grieta_tramo_ventana: 0.06        # ventana de la media móvil sobre el camino, en fracción de su largo
-  grieta_tramo_umbral: 1.5          # media de z sobre el camino a partir de la cual el tramo es grieta
+  grieta_tramo_umbral: 1.5          # media de z sobre el camino a partir de la cual el tramo es grieta...
+  grieta_tramo_umbral_bajo: 1.15    # ...y por encima de la cual se prolonga hacia sus extremos tenues
   grieta_semilla_min: 1.0           # z mínimo de cada píxel del camino para ser semilla
   grieta_hueco_max: 0.2             # hueco máximo entre tramos que se rellena, en fracción del largo del camino
   grieta_rama_exclusion: 0.15       # al buscar una rama, radio excluido alrededor de la principal (fracción del lado corto)

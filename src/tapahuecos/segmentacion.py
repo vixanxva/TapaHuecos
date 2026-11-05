@@ -8,9 +8,10 @@ El umbral depende del tipo de daño:
   oscuro que el asfalto (agujero, sombra) o más claro (base expuesta, polvo, agua que
   refleja el cielo). Se conservan solo las regiones que tocan el centro del recuadro.
   Otsu parte el recorte en dos mitades aunque el hueco sea pequeño: si la máscara invade
-  las esquinas (que en un recuadro ajustado son asfalto) o apenas cubre el centro, se
+  las esquinas (que en un recuadro ajustado son asfalto) o no cubre bien el centro, se
   prueba otra máscara: lo que se aparta del asfalto de las esquinas en brillo, color y
-  textura (rareza), con umbral por histéresis.
+  textura (rareza), con umbral por histéresis. Al final, cada región que casi llena su
+  contorno convexo se completa hasta él: el umbral deja muescas dentro del hueco.
 - Grietas (D00, D10): líneas finas → profundidad de valle (cuánto más oscuro es el píxel
   que sus dos lados en alguna orientación), en unidades de la textura del recorte. YOLO
   encuadra la grieta de punta a punta, así que se busca por programación dinámica el camino
@@ -182,6 +183,24 @@ def _rareza(gris: np.ndarray, color: np.ndarray | None, esquinas: np.ndarray) ->
     return np.sqrt(cuadrado)
 
 
+def _rareza_reducida(gris: np.ndarray, color: np.ndarray | None, cfg: ConfigSegmentacion) -> np.ndarray:
+    """La rareza de un recorte grande se calcula a menor resolución y se vuelve a ampliar.
+
+    Es un mapa suave (los rasgos se suavizan a una escala relativa al recorte), así que
+    reducirlo apenas lo cambia, y es la parte más lenta: en un recorte de 400 × 200 px
+    pasaba de 15 ms. Los recortes de hasta `huecos_rareza_lado_px`² de área no se reducen.
+    """
+    alto, ancho = gris.shape[:2]
+    escala = cfg.huecos_rareza_lado_px / (alto * ancho) ** 0.5
+    if escala >= 1:
+        return _rareza(gris, color, _nucleo_y_esquinas(alto, ancho)[1])
+    tam = (max(3, round(ancho * escala)), max(3, round(alto * escala)))
+    gris_r = cv2.resize(gris, tam, interpolation=cv2.INTER_AREA)
+    color_r = None if color is None else cv2.resize(color, tam, interpolation=cv2.INTER_AREA)
+    rareza = _rareza(gris_r, color_r, _nucleo_y_esquinas(tam[1], tam[0])[1])
+    return cv2.resize(rareza, (ancho, alto), interpolation=cv2.INTER_LINEAR)
+
+
 def _mascara_rareza(
     rareza: np.ndarray, nucleo: np.ndarray, limpieza: np.ndarray, cfg: ConfigSegmentacion
 ) -> np.ndarray:
@@ -215,7 +234,40 @@ def _otsu_central(gris: np.ndarray, limpieza: np.ndarray, cfg: ConfigSegmentacio
     return _rellenar(max(candidatas, key=lambda m: _centralidad(m, cfg)))
 
 
+def _completar_convexo(mascara: np.ndarray, esquinas: np.ndarray, cfg: ConfigSegmentacion) -> np.ndarray:
+    """Rellena cada región hasta su contorno convexo cuando casi lo llena.
+
+    El umbral deja muescas donde el fondo del hueco se parece al asfalto (grava, agua,
+    sombra parcial) y la apertura recorta las puntas: la máscara se queda corta. Un hueco
+    es aproximadamente convexo, así que si la región ya llena casi todo su casco se
+    completa. No se hace si es muy cóncava (grieta curva, dos manchas unidas por un
+    puente) ni si el casco invadiría las esquinas, que son asfalto.
+    """
+    proporcion = cfg.huecos_convexo_max
+    if proporcion <= 1:
+        return mascara
+    contornos, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    completa = mascara.copy()
+    tope_esquinas = cfg.huecos_convexo_esquinas * esquinas.sum()
+    for contorno in contornos:
+        area = cv2.contourArea(contorno)
+        casco = cv2.convexHull(contorno)
+        if area < 4 or cv2.contourArea(casco) > proporcion * area:
+            continue
+        lleno = np.zeros_like(mascara)
+        cv2.drawContours(lleno, [casco], -1, 255, cv2.FILLED)
+        if ((lleno > 0) & (mascara == 0) & esquinas).sum() <= tope_esquinas:
+            completa |= lleno
+    return completa
+
+
 def _region(gris: np.ndarray, cfg: ConfigSegmentacion, color: np.ndarray | None = None) -> np.ndarray:
+    alto, ancho = gris.shape[:2]
+    _, esquinas = _nucleo_y_esquinas(alto, ancho)
+    return _completar_convexo(_region_umbral(gris, cfg, color), esquinas, cfg)
+
+
+def _region_umbral(gris: np.ndarray, cfg: ConfigSegmentacion, color: np.ndarray | None = None) -> np.ndarray:
     alto, ancho = gris.shape[:2]
     # En recortes pequeños la limpieza no puede ser del tamaño del propio hueco.
     limpieza = _elipse(min(cfg.kernel_morfologico, max(1, min(alto, ancho) // 8)))
@@ -224,23 +276,46 @@ def _region(gris: np.ndarray, cfg: ConfigSegmentacion, color: np.ndarray | None 
     if esquinas.sum() < 8 or not nucleo.any():
         return otsu  # recorte diminuto: no hay asfalto de referencia
 
-    # Otsu se da por bueno si no invade las esquinas ni deja el centro casi vacío.
+    # Otsu se da por bueno si no invade las esquinas y cubre bien el centro. Si cubre el
+    # núcleo solo a medias suele quedarse corto (borde oscuro de un hueco de fondo claro,
+    # grava suelta): entonces también se prueba la rareza, que gana si separa mejor.
     dentro = otsu > 0
     otsu_nucleo, otsu_esquinas = float(dentro[nucleo].mean()), float(dentro[esquinas].mean())
     if (otsu_esquinas <= cfg.huecos_desborde_esquinas
             and otsu_nucleo >= cfg.huecos_nucleo_minimo):
         return otsu
 
-    alternativa = _mascara_rareza(_rareza(gris, color, esquinas), nucleo, limpieza, cfg)
+    alternativa = _mascara_rareza(_rareza_reducida(gris, color, cfg), nucleo, limpieza, cfg)
     dentro = alternativa > 0
     alt_nucleo, alt_esquinas = float(dentro[nucleo].mean()), float(dentro[esquinas].mean())
     # Si el hueco llena el recuadro, las esquinas no son asfalto y la rareza no encuentra
     # nada (o se desborda también): entonces se queda Otsu, que lo cubre entero.
     if (alt_nucleo < cfg.huecos_alternativa_nucleo
             or alt_esquinas > cfg.huecos_alternativa_esquinas
-            or alt_nucleo - alt_esquinas <= otsu_nucleo - otsu_esquinas):
+            or alt_nucleo - alt_esquinas <= otsu_nucleo - otsu_esquinas
+            or _es_halo(otsu, alternativa, cfg)):
         return otsu
     return alternativa
+
+
+def _es_halo(otsu: np.ndarray, alternativa: np.ndarray, cfg: ConfigSegmentacion) -> bool:
+    """True si la rareza solo agranda una máscara de Otsu ya compacta.
+
+    La rareza se calcula sobre rasgos suavizados, así que alrededor de un borde nítido
+    deja un halo de un par de píxeles de suavizado. Si Otsu ya es una región compacta
+    (llena su contorno convexo) contenida en la rareza y esta solo la agranda un poco, el
+    borde de Otsu es el bueno: la rareza sirve para recuperar huecos que Otsu deja
+    fragmentados o cortos, no para engordar los que ya marca bien.
+    """
+    dentro = otsu > 0
+    area = int(dentro.sum())
+    if not area or (dentro & (alternativa > 0)).sum() < 0.9 * area:
+        return False
+    if (alternativa > 0).sum() > cfg.huecos_halo_area * area:
+        return False
+    contornos, _ = cv2.findContours(otsu, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    casco = sum(cv2.contourArea(cv2.convexHull(c)) for c in contornos)
+    return casco > 0 and sum(cv2.contourArea(c) for c in contornos) >= cfg.huecos_halo_solidez * casco
 
 
 # --- Grietas (D00, D10) ---------------------------------------------------------------
@@ -293,14 +368,18 @@ def _valles(suave: np.ndarray, mad: float, cfg: ConfigSegmentacion) -> np.ndarra
 
 def _pintura(recorte: np.ndarray, suave: np.ndarray, mediana: float, mad: float,
              cfg: ConfigSegmentacion) -> np.ndarray:
-    """Marcas viales: muy claras (blancas) o amarillas/naranjas bastante saturadas."""
+    """Marcas viales y objetos de color: muy claros (blancos) o bastante saturados.
+
+    El color saturado vale en cualquier tono, no solo amarillo: conos, vegetación o
+    vehículos dentro del recuadro forman bordes que el camino confundiría con grietas.
+    """
     clara = suave > mediana + max(cfg.grieta_pintura_delta, 4 * mad)
     if recorte.ndim == 3:
         hsv = cv2.cvtColor(recorte, cv2.COLOR_BGR2HSV)
-        tono, sat = hsv[..., 0], hsv[..., 1]
+        sat = hsv[..., 1]
         ms = _percentil_u8(sat, 50)
         mads = _percentil_u8(cv2.absdiff(sat, ms), 50) + 1.0
-        clara |= (sat > ms + max(20.0, 4 * mads)) & (tono >= 8) & (tono <= 40) & (suave >= mediana)
+        clara |= (sat > ms + max(20.0, 4 * mads)) & (suave >= mediana)
     # Se descartan los granos claros sueltos del agregado.
     _, etiquetas, est, _ = cv2.connectedComponentsWithStats(clara.astype(np.uint8), connectivity=8)
     grandes = np.flatnonzero(est[:, cv2.CC_STAT_AREA] >= cfg.grieta_pintura_area_min)
@@ -397,17 +476,27 @@ def _trazar(z: np.ndarray, cfg: ConfigSegmentacion) -> tuple[np.ndarray, np.ndar
 
 
 def _semillas_camino(z: np.ndarray, ys: np.ndarray, xs: np.ndarray, umbral: float,
-                     largo_min: float, cfg: ConfigSegmentacion) -> np.ndarray:
+                     largo_min: float, cfg: ConfigSegmentacion,
+                     umbral_bajo: float | None = None) -> np.ndarray:
     """Píxeles del camino que están sobre la grieta: media móvil de z por encima del umbral.
 
     Los huecos cortos entre dos tramos se rellenan: ahí el camino sigue la grieta aunque
-    se vuelva tenue (grietas punteadas o poco contrastadas).
+    se vuelva tenue (grietas punteadas o poco contrastadas). Con `umbral_bajo`, cada tramo
+    se prolonga por histéresis mientras la media no baje de él.
     """
     v = cv2.dilate(z, np.ones((3, 3), np.uint8))[ys, xs]  # tolera 1 px de desvío
     largo = len(v)
     w = max(7, round(largo * cfg.grieta_tramo_ventana)) | 1
     media = np.convolve(np.pad(v, w // 2, mode="edge"), np.ones(w) / w, mode="valid")
     en_grieta = media >= umbral
+    if umbral_bajo is not None and umbral_bajo < umbral:
+        # Histéresis a lo largo del camino: un tramo fuerte se prolonga mientras la media no
+        # baje del umbral bajo. Recupera los extremos tenues de la grieta sin aceptar tramos
+        # débiles sueltos, que suelen ser textura.
+        extendido = media >= umbral_bajo
+        tramo = np.cumsum(np.diff(np.concatenate([[0], extendido.astype(np.int8)])) == 1) * extendido
+        con_fuerte = np.unique(tramo[en_grieta])
+        en_grieta = np.isin(tramo, con_fuerte[con_fuerte > 0])
     sel = en_grieta & (v >= cfg.grieta_semilla_min)
     idx = np.flatnonzero(en_grieta)
     hueco_max = cfg.grieta_hueco_max * largo
@@ -441,7 +530,9 @@ def _lineas(canal: np.ndarray, recorte: np.ndarray, cfg: ConfigSegmentacion) -> 
 
     # Grieta principal: tramos del camino de punta a punta.
     ys, xs = _trazar(z, cfg)
-    semillas = _semillas_camino(z, ys, xs, cfg.grieta_tramo_umbral, 0, cfg)
+    # Solo en la grieta principal: en la rama, el umbral bajo agrega textura.
+    semillas = _semillas_camino(z, ys, xs, cfg.grieta_tramo_umbral, 0, cfg,
+                                cfg.grieta_tramo_umbral_bajo)
     if semillas.any():
         # Rama o segunda grieta: otro camino lejos del primero, solo con tramos claros y largos.
         radio = max(3, round(min(alto, ancho) * cfg.grieta_rama_exclusion))
