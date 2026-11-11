@@ -18,6 +18,8 @@ anótelos aquí. La carpeta del equipo es
   (sirve para comprobar que la copia del Drive es la misma).
 - Métricas de test por clase en `reportes/modelo_test.md` (no versionado).
 - Punto débil conocido: **D40 (huecos)**, recall 0.445 y mAP@0.5 0.505. Ver issue #47.
+- `runs/rdd_completo/weights/best.pt` es una **copia idéntica** de este checkpoint de
+  fase 1 (mismo SHA-256); no es el `best.pt` de la fase 2.
 - `runs/rdd_completo/weights/last.pt` es el último checkpoint del mismo
   entrenamiento; para procesar se usa `best_rdd.pt`.
 
