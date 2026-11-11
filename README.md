@@ -7,7 +7,10 @@ Herramienta de consola en Python que recibe un video grabado desde un vehículo 
 3. una **base de datos SQLite** con el tipo, el tamaño aproximado y la coordenada GPS de cada daño;
 4. un **mapa HTML** con todos los puntos.
 
-No es una app móvil ni una página web. Probado con videos de calles de Montería (Córdoba, Colombia).
+El procesamiento es una herramienta de consola, no una página web. Para grabar el GPX
+con la pantalla apagada hay una **app Android compañera** en [`android/`](android/README.md);
+el video se sigue grabando con la cámara normal del teléfono. Probado con videos de
+calles de Montería (Córdoba, Colombia).
 
 ```
 Video (.mp4) + Recorrido GPS (.gpx)
@@ -107,6 +110,31 @@ Todos los resultados quedan en `salidas/` (o en la carpeta de `--salida`): `*_an
 
 Los parámetros (umbral de confianza, salto de fotogramas, zona horaria, segmentación, calibración) están en [config.yaml](config.yaml).
 
+## App Android para grabar GPX
+
+La app de [`android/`](android/README.md) es independiente del pipeline y sirve para
+grabar el recorrido GPS mientras se graba video con la cámara normal del teléfono:
+
+- Android 8.0 o superior (API 26).
+- Servicio en primer plano con notificación persistente: sigue grabando con la
+  pantalla apagada o la app en segundo plano.
+- Un punto por segundo, con precisión y distancia acumulada en pantalla.
+- Guarda una copia privada y exporta el GPX a `Documents/TapaHuecos`; también permite
+  compartirlo con otra app.
+- No graba video ni procesa daños: solo produce el GPX que después consume
+  `tapahuecos procesar`.
+
+Para compilarla e instalarla:
+
+```bash
+cd android
+./gradlew assembleDebug testDebugUnitTest lintDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Instrucciones de uso y permisos en [android/README.md](android/README.md). La APK
+todavía no se ha probado en un teléfono físico; esa es la validación pendiente.
+
 ## Demo sin videos reales
 
 Mientras no haya recorridos grabados, `scripts/demo.py` arma un video con imágenes de RDD2022 (prefiere las que tienen huecos etiquetados) y un GPX simulado por la Avenida Primera de Montería, para mostrar el sistema de punta a punta:
@@ -155,6 +183,7 @@ TapaHuecos/
 │   └── cli.py                  comandos de consola
 ├── scripts/                    preparar datos, entrenar, evaluar, calibrar
 ├── tests/                      pruebas (no requieren YOLO ni GPU)
+├── android/                    app compañera para grabar GPX en segundo plano
 ├── docs/                       documento técnico, guías y backlog
 ├── datos/  modelos/  calibracion/   (no versionados: ver datos/README.md)
 └── .github/                    CI, plantillas de issues y de PR
@@ -164,6 +193,7 @@ TapaHuecos/
 
 - [Documento técnico](docs/documento_tecnico.md): alcance, arquitectura, cada etapa, métricas y riesgos.
 - [Guía de captura](docs/guia_captura.md): cómo grabar el video y el GPX.
+- [App Android](android/README.md): cómo compilar, instalar y usar la grabadora de GPX.
 - [Guía de etiquetado](docs/guia_etiquetado.md): criterios para etiquetar en Roboflow.
 - [Backlog](docs/backlog.md): issues e hitos del proyecto.
 - [Estado actual](docs/estado_actual.md): qué insumos hay en la copia local y qué falta por hito.
@@ -173,7 +203,7 @@ TapaHuecos/
 
 **Hace:** detectar cuatro tipos de daño en imágenes y video, resaltarlos y estimar su área, ubicarlos por GPS, registrarlos y mostrarlos en un mapa, y reportar métricas con videos reales.
 
-**No hace:** medir la profundidad de los huecos (no es confiable con una sola cámara), procesar en tiempo real dentro del vehículo (el modo cámara funciona, pero a pocos fps en un portátil sin GPU), ni ofrecer interfaz gráfica, servidor web, app móvil o envío automático de reportes. Ver la sección 2 del [documento técnico](docs/documento_tecnico.md).
+**No hace:** medir la profundidad de los huecos (no es confiable con una sola cámara), procesar en tiempo real dentro del vehículo (el modo cámara funciona, pero a pocos fps en un portátil sin GPU), ni ofrecer interfaz gráfica, servidor web o envío automático de reportes. La app Android compañera solo graba el GPX: no graba video ni detecta daños en el teléfono. Ver la sección 2 del [documento técnico](docs/documento_tecnico.md).
 
 ## Licencia
 

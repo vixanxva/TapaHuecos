@@ -1,53 +1,73 @@
 # Estado actual del proyecto
 
 Fecha de corte: **2026-11-11**. Rama local `avance-local`, creada desde `develop`
-(`29148c0`) y **sin rama remota configurada**.
+(`29148c0`), con tres commits locales y **sin rama remota configurada**.
 
-Este documento resume qué está disponible en esta copia local, qué falta para cada
-hito del [backlog](backlog.md) y cuál es el siguiente paso verificable. No reemplaza
-las issues de GitHub: cuando una tarea ya existe allí, se indica su número.
+Este documento resume qué hay realmente en esta copia local, qué falta para cada hito
+del [backlog](backlog.md) y cuál es el siguiente paso verificable. El inventario se
+rehízo leyendo los archivos y los ZIP, no la instantánea anterior. No reemplaza las
+issues de GitHub: cuando una tarea existe allí, se indica su número.
 
 ## Resumen
 
 - El código del pipeline está completo y la suite pasa: **115 pruebas**.
-- La fase 1 del modelo está disponible (`modelos/best_rdd.pt`, 22.5 MB) con métricas
-  de prueba conocidas. Se instaló Ultralytics en el entorno temporal y se hizo una
-  corrida real corta en CPU (ver más abajo).
-- El ZIP traído desde Drive es un **snapshot parcial**: contiene 2 de los 6 videos,
-  2 GPX que no coinciden con esos videos, solo `RDD2022/Japan.zip`, los pesos de la
-  fase 1 y salidas antiguas. No contiene el dataset etiquetado, `best.pt`, la
-  calibración ni los CSV de campo.
-- Los bloqueos principales son: **no hay un par video+GPX sincronizado**, **no hay
-  etiquetas propias para entrenar `best.pt`**, **no hay homografía ni mediciones con
-  cinta** y **no está la base de datos revisada en campo**.
+- Los **seis videos** y los **seis GPX** de la campaña están en disco. Cinco videos
+  tienen un GPX que los cubre de principio a fin; el sexto (`125447`) no tiene GPX.
+- RDD2022 está completo para el plan del notebook: **cinco ZIP de países**
+  (`Japan`, `India`, `Czech`, `United_States`, `China_MotorBike`). Falta convertirlo
+  a `datos/rdd_yolo/`.
+- La fase 1 del modelo está disponible (`modelos/best_rdd.pt`, 22.5 MB).
+  `runs/rdd_completo/weights/best.pt` es **el mismo checkpoint de fase 1**, no un
+  modelo de fase 2.
+- La base revisada `Salidas/Prueba_region/danos.db` tiene **48/48 daños revisados:
+  39 reales y 9 falsos positivos**; precisión **0.8125**. No hay verdad de campo, así
+  que la exhaustividad sigue sin medirse.
+- La app Android compañera está en `android/`, compila y pasa sus pruebas unitarias y
+  Lint, pero **todavía no se ha probado en un teléfono físico**.
+- Los bloqueos reales ya no son “faltan videos”: son **etiquetas propias**,
+  **`best.pt` de fase 2**, **calibración**, **verdad de campo/mediciones con cinta** y
+  **trabajo humano de entrega** (informe, demo, sustentación, release).
 
 ## Inventario local
 
 | Insumo | Estado | Detalle |
 |---|---|---|
-| Videos | Parcial | `datos/videos/VID_20261108_110401.mp4` (1080x1920, 32.4 s) y `VID_20261108_111532.mp4` (1080x1920, 36.2 s). El CSV de `Prueba_region` usa 5 recorridos: faltan los videos `110956`, `111300` y `111705` |
-| GPX | Parcial, sin solape | `20261108-111252.gpx` (16:12:52–16:13:42 UTC) y `20261108-111702.gpx` (16:17:02–16:17:49 UTC) |
-| RDD2022 | Parcial | Solo `datos/RDD2022/Japan.zip` (1.07 GB); falta convertirlo a `datos/rdd_yolo/` |
-| Dataset propio | Falta | No hay `datos/monteria/` (exportación de Roboflow) ni `datos/combinado/` |
-| Pesos fase 1 | Disponible | `modelos/best_rdd.pt`, 22,530,474 bytes; también `runs/rdd_completo/weights/last.pt` |
+| Videos | Completo | `datos/videos/`: seis `.mp4` 1080x1920, de 32.4 a 58.2 s. Todos se decodifican completos |
+| GPX | Completo para cinco recorridos | `datos/gpx/`: cinco GPX cubren sus videos con 3–11 s de margen al inicio. `20261108-110219.gpx` es un recorrido de 46 s sin video; `VID_20261108_125447.mp4` no tiene GPX |
+| Pares video+GPX | Cinco verificados | `110401↔110358`, `110956↔110953`, `111300↔111252`, `111532↔111521`, `111705↔111702` |
+| RDD2022 | Completo para el plan | `datos/RDD2022/`: `Japan.zip`, `India.zip`, `Czech.zip`, `United_States.zip`, `China_MotorBike.zip` (2.49 GB en total) |
+| RDD2022 en formato YOLO | Falta | No existe `datos/rdd_yolo/`; hay que ejecutar `scripts/preparar_rdd2022.py` |
+| Dataset propio | Falta | No hay `datos/monteria/` (Roboflow) ni `datos/combinado/` |
+| Pesos fase 1 | Disponible | `modelos/best_rdd.pt`, 22,530,474 bytes, SHA-256 `15B5169A…3AFB5`; `runs/rdd_completo/weights/best.pt` es idéntico |
 | Pesos fase 2 | Falta | No hay `modelos/best.pt` |
 | Calibración | Falta | `calibracion/` solo tiene `.gitkeep`; no hay video de calibración ni `homografia.npy` |
 | Verdad de campo | Falta | No hay `datos/verdad_campo.csv` ni `datos/huecos_medidos.csv` |
-| Salidas | Parciales y sin revisar | `salidas/danos.db` (15 daños), `salidas/fps_prueba/danos.db` (6) y `salidas/Prueba_region/danos.csv` (48 filas de 5 recorridos); **0 verificados** |
-| Reporte de modelo | Disponible, no versionado | `reportes/modelo_test.md`; `runs/rdd_completo/` tiene curvas y matriz de confusión |
-| ZIP de Drive | Conservado | `drive-download-20261111T203820Z-1-001.zip` (2.08 GB, 62 entradas); no se modificó ni se borró |
+| Salidas revisadas | Disponible | `Salidas/Prueba_region/danos.db`: 48 daños de cinco recorridos, 48 revisados, 39 reales; incluye videos anotados, 48 recortes, `danos.csv` y `mapa.html` |
+| Otras salidas | Parciales, sin revisar | `Salidas/danos.db` (15 daños) y `Salidas/fps_prueba/danos.db` (6), sin `verificado`; `Salidas/prueba_default/danos.db` está vacía |
+| Reporte de campo | Actualizado | `reportes/campo.md`/`.json`: 48 revisados, 39 reales, precisión 0.8125; exhaustividad y F1 sin dato |
+| Reporte de modelo | Disponible | `reportes/modelo_test.md`/`.json` y curvas/matriz en `runs/rdd_completo/` |
+| App Android | Compila, sin probar en hardware | `android/`; APK en `android/app/build/outputs/apk/debug/app-debug.apk`; ver [android/README.md](../android/README.md) |
+| ZIP de Drive | Conservados | `drive-download-20261111T215651Z-1-00{1,2,3}.zip`, 5.17 GB en total; no se modificaron ni se borraron |
 
-### Por qué los videos actuales no sirven para georreferenciar
+## Videos y GPX verificados
 
-| Video | Hora local de inicio | Fin aproximado |
-|---|---|---|
-| `VID_20261108_110401.mp4` | 11:04:01 (-05:00) | 11:04:33 |
-| `VID_20261108_111532.mp4` | 11:15:32 (-05:00) | 11:16:08 |
+Se decodificaron los seis videos completos con OpenCV y se leyeron las horas de los
+`<trkpt>` del GPX (no la hora de metadatos del archivo).
 
-Los dos GPX empiezan a las 11:12:52 y 11:17:02 (hora local), fuera de esas ventanas.
-La base `salidas/danos.db` referencia además un GPX que no está en esta copia:
-`datos/gpx/20261108-110358.gpx`. Por eso las salidas actuales no tienen coordenadas
-confiables y no se pueden validar contra campo.
+| Video | Resolución / fps | Duración | Fotogramas | GPX | Margen del GPX | Resultado |
+|---|---|---|---|---|---|---|
+| `VID_20261108_110401.mp4` | 1080x1920 / 49.6 | 32.4 s | 1609/1609 | `20261108-110358.gpx` | empieza 3 s antes, termina 4 s después | Cubierto |
+| `VID_20261108_110956.mp4` | 1080x1920 / 56.2 | 58.2 s | 3268/3268 | `20261108-110953.gpx` | 3 s antes, 7 s después | Cubierto |
+| `VID_20261108_111300.mp4` | 1080x1920 / 53.0 | 38.2 s | 2027/2027 | `20261108-111252.gpx` | 8 s antes, 4 s después | Cubierto |
+| `VID_20261108_111532.mp4` | 1080x1920 / 49.6 | 36.2 s | 1796/1796 | `20261108-111521.gpx` | 11 s antes, 4 s después | Cubierto |
+| `VID_20261108_111705.mp4` | 1080x1920 / 47.3 | 39.5 s | 1868/1868 | `20261108-111702.gpx` | 3 s antes, 5 s después | Cubierto |
+| `VID_20261108_125447.mp4` | 1080x1920 / 50.0 | 40.5 s | 2027/2027 | — | — | Sin GPX |
+
+Los cinco videos de la campaña tienen metadatos de rotación de 90°; el sexto, 0°.
+La diferencia máxima entre el tiempo por `CAP_PROP_POS_MSEC` y `índice / fps` llegó a
+**2.03 s**, por encima del umbral de 1 s de la issue #14. El código ya usa
+`CAP_PROP_POS_MSEC` y solo cae a `índice / fps` si la marca no es fiable
+(`src/tapahuecos/entrada.py`), así que no hizo falta cambiar nada.
 
 ## Fase por fase
 
@@ -55,12 +75,12 @@ confiables y no se pueden validar contra campo.
 
 | Tarea | Estado | Qué falta / evidencia |
 |---|---|---|
-| Descargar RDD2022 y convertirla | Parcial | Solo está Japón; falta ejecutar `scripts/preparar_rdd2022.py` y decidir si se usan más países |
-| Grabar 5 recorridos con video+GPX | Parcial | El CSV de `Prueba_region` demuestra 5 recorridos procesados, pero en disco solo están 2 videos y 2 GPX, y **ningún par coincide en tiempo**; faltan los videos `110956`, `111300`, `111705` y los GPX de estos videos |
-| Extraer fotogramas y subirlos a Roboflow | Falta | No hay fotogramas extraídos ni proyecto/exportación local |
-| Etiquetar 300–500 imágenes | Falta | No hay etiquetas propias; issue #4 |
-| Exportar y combinar datasets | Falta | Faltan `datos/monteria/` y `datos/combinado/`; issues #5 y #6 |
-| Verdad de campo y 10–20 huecos medidos | Falta | Faltan `datos/verdad_campo.csv` y `datos/huecos_medidos.csv` |
+| Descargar RDD2022 y convertirla | Descarga hecha; conversión pendiente | Están los cinco ZIP del plan; falta ejecutar `scripts/preparar_rdd2022.py` para crear `datos/rdd_yolo/` |
+| Grabar 5 recorridos con video+GPX | Hecho | Cinco pares verificados; el sexto video no tiene GPX |
+| Extraer fotogramas y subirlos a Roboflow | Falta | No hay fotogramas extraídos ni proyecto/exportación local; requiere cuenta de Roboflow |
+| Etiquetar 300–500 imágenes | Falta | No hay etiquetas propias; issue #4/#5, trabajo humano |
+| Exportar y combinar datasets | Bloqueada | Falta `datos/monteria/`; sin él no se puede crear `datos/combinado/` |
+| Verdad de campo y 10–20 huecos medidos | Falta | Faltan los dos CSV; requiere medición con cinta en campo |
 
 ### M2 — Modelo
 
@@ -68,9 +88,9 @@ confiables y no se pueden validar contra campo.
 |---|---|---|
 | Fase 1 con RDD2022 (`best_rdd.pt`) | Hecha | Métricas en [modelos/README.md](../modelos/README.md) y `reportes/modelo_test.md` |
 | Fase 2 con dataset combinado (`best.pt`) | Bloqueada | No hay etiquetas ni dataset combinado; issue #10 |
-| Comparar `n` contra `s` | Falta la comparación de precisión | La issue #26 midió fps con ambos; falta la comparación de métricas (issue #11) |
-| Reporte de métricas | Parcial | Hay métricas de test de RDD2022 y curvas en `runs/`; falta evaluar en Montería |
-| Publicar pesos y enlaces | Parcial | `best_rdd.pt` está local, pero no hay enlace directo en `modelos/README.md`; issue #13 |
+| Comparar `n` contra `s` | Bloqueada | Faltan los dos entrenamientos y la prueba de Montería; issue #11 |
+| Reporte de métricas | Parcial | RDD2022 hecho; falta evaluar en la prueba de Montería; issue #12 |
+| Publicar pesos y enlaces | Parcial | `best_rdd.pt` está local y documentado; falta un enlace público o release; issue #13 |
 
 Métricas conocidas de `best_rdd.pt`: mAP@0.5 de validación **0.643**, mAP@0.5 de
 prueba **0.633**, mAP@0.5:0.95 de prueba **0.329**. El punto débil es D40 (huecos):
@@ -82,106 +102,163 @@ recall **0.445**, mAP@0.5 **0.505**; ver issue #47.
 |---|---|---|
 | Etapas de entrada, YOLO, segmentación, medición, GPS, registro y salidas | Hecha | `src/tapahuecos/`; contratos en [contratos.md](contratos.md) |
 | CLI y demo | Hecha | `tapahuecos` y `scripts/demo.py`; **115 pruebas** pasan |
-| Prueba completa con un recorrido real | Parcial | Se procesaron videos sueltos y una corrida de humo de 60 fotogramas; falta una corrida verificable con video+GPX sincronizados |
-| Área en m² | Bloqueada | No hay homografía ni `metros_por_pixel`; todas las salidas tienen `area_m2` vacío |
-| Ajustar segmentación con recortes reales | Parcial | Hay trabajo previo en commits, pero faltan recortes revisados y métricas por clase |
-
-Mejoras agregadas en esta rama para destrabar la operación:
-
-- `tapahuecos verificar`: revisa Python, configuración, región, pesos, calibración,
-  Ultralytics/PyTorch y, si se indican, video y GPX (incluido su solape temporal).
-- `tapahuecos procesar --max-fotogramas N`: permite una prueba rápida sin procesar
-  el video completo.
-- `config.yaml` y `ConfigModelo.pesos` apuntan ahora a `modelos/best_rdd.pt` (fase 1)
-  mientras no exista `best.pt`; así `procesar` funciona sin `--pesos` al instalar los
-  pesos disponibles.
-
-### Corrida de humo hecha en esta rama
-
-Con `best_rdd.pt`, CPU (PyTorch 2.15.0+cpu), la región `0,0.43,1,0.65` y
-`--cada 2`:
-
-```text
-60 fotogramas en 10.5 s (5.7 fps), 2 daños registrados (D40 y D10)
-Video: salidas/smoke_region/VID_20261108_110401_anotado.mp4
-```
-
-Los dos daños quedaron sin GPS y sin área en m² (faltan GPX y calibración). Es una
-prueba de que el pipeline corre de punta a punta, **no** una validación de campo:
-los recortes son pequeños y deben revisarse como posibles falsos positivos. La salida
-está en `salidas/smoke_region/` (ignorada por Git).
+| Prueba completa con un recorrido real | Hecha en esta revisión | Se procesó `110401` con su GPX y la franja de vía; los daños quedaron con coordenadas |
+| Área en m² | Bloqueada | No hay homografía ni `metros_por_pixel`; las salidas tienen `area_m2` vacío |
+| Ajustar segmentación con recortes reales | Parcial | Hay recortes revisados de la campaña, pero sin métricas por clase |
 
 ### M4 — Pruebas en campo
 
 | Tarea | Estado | Qué falta / evidencia |
 |---|---|---|
-| Procesar todos los recorridos | Hecho en la revisión de campo, no reproducible en local | La issue #24 revisó 48 daños de 5 recorridos del 8/11/2026; solo 2 de esos videos están en esta copia |
-| Revisar cada daño (`tapahuecos revisar`) | Hecho en la revisión de campo, no reproducible en local | Issue #24: 48/48 revisados, 37 reales, precisión 0.771 (D40 4/4, D20 30/39, D10 0/2). La BD revisada (`salidas/prueba_region/danos.db`) y `reportes/campo.md` no vienen en el ZIP; las 69 filas de las BD locales siguen sin `verificado` |
-| Métricas de campo | Precisión hecha; recall pendiente | Precisión 0.771 según #24; el recall depende de la verdad de campo (#7) y no se midió |
-| Medir fps con y sin GPU | Hecho en CPU; GPU pendiente | Issue #26: 805 fotogramas en 145.6 s (5.5 fps) sin región y 105.4 s (7.6 fps) con región, en CPU. No se midió con GPU porque el equipo no tiene NVIDIA |
+| Procesar todos los recorridos | Hecho | La campaña procesó cinco recorridos; la BD y los videos anotados están en `Salidas/Prueba_region/` |
+| Revisar cada daño (`tapahuecos revisar`) | Hecho | 48/48 revisados: 39 reales y 9 falsos. Por clase: D00 3/3, D10 0/2, D20 32/39, D40 4/4 |
+| Métricas de campo | Precisión hecha; exhaustividad pendiente | Precisión **0.8125** (39/48). Sin `verdad_campo.csv` no se puede medir recall ni F1 |
+| Medir fps con y sin GPU | Hecho en CPU; GPU no disponible | Issue #26: 805 fotogramas en 145.6 s (5.5 fps) sin región y 105.4 s (7.6 fps) con región, en CPU |
 | Error de área y posición | Bloqueada | Requiere homografía y `huecos_medidos.csv`; issue #27 |
 
 ### M5 — Entrega
 
 | Tarea | Estado | Qué falta / evidencia |
 |---|---|---|
-| Corregir diapositiva 7 | Falta | No está el archivo de la presentación en esta copia |
-| Informe final con métricas y capturas | Falta | Hay material base (métricas, curvas, mapas), pero no el informe final |
-| Video de demostración | Parcial | Hay videos anotados antiguos; falta uno con un recorrido validado |
+| Corregir diapositiva 7 | Falta | No está la presentación en esta copia |
+| Informe final | Falta | Hay material base (métricas, curvas, mapas), pero no el informe |
+| Video de demostración | Parcial | Hay videos anotados; falta convertirlos a H.264 y grabar la demo |
 | Preparar sustentación | Falta | No hay documento de sustentación |
-| Publicar release `v1.0` | Falta | No hay tags en el repositorio local |
+| Publicar release `v1.0` | Falta | No hay tags y el release necesita `best.pt` e informe |
 
-## Qué falta traer del Drive (por prioridad)
+## Verificaciones hechas en esta rama
 
-1. **Etiquetas propias**: exportación de Roboflow (`datos/monteria/`) o el dataset
-   combinado ya armado. Sin esto no se puede entrenar `best.pt` (fase 2).
-2. **`modelos/best.pt`**, si ya se entrenó en Colab. Si no existe, la prioridad es el
-   punto 1.
-3. **Video de calibración** y/o `calibracion/homografia.npy`, más
-   `datos/huecos_medidos.csv` con las mediciones con cinta. Sin esto no hay área en m²
-   ni error de área/posición.
-4. **Pares video+GPX sincronizados**: los 3 videos de recorrido que faltan
-   (`110956`, `111300`, `111705`), el GPX de cada video (incluido
-   `20261108-110358.gpx`, que referencia la BD actual) y el video de calibración si es
-   el sexto video.
-5. **Evidencia de campo**: `salidas/prueba_region/danos.db` (con `verificado`
-   diligenciado) y `reportes/campo.md`, para reproducir la precisión 0.771 y calcular
-   el recall cuando exista la verdad de campo.
-6. **RDD2022 completo** si se van a usar más países; hoy solo está `Japan.zip`.
+### Videos, GPX y hora de inicio (#14)
+
+- Los seis videos abren y se decodifican completos (1609 a 3268 fotogramas).
+- Los cinco pares video+GPX se solapan; el GPX empieza antes y termina después del
+  video en todos los casos.
+- La hora de inicio se deduce correctamente del nombre `VID_AAAAMMDD_HHMMSS` y el
+  desplazamiento UTC es −5.
+- La marca de tiempo del video se toma de `CAP_PROP_POS_MSEC`; la deriva observada
+  justifica no usar `índice / fps`.
+- La rotación de 90° se corrige automáticamente.
+- Todos los videos de la campaña son `.mp4`; no hay `.MOV` ni H.265 en esta copia, así
+  que ese punto de la issue #14 queda sin probar.
+
+### Georreferenciación con un recorrido real (#18)
+
+Se procesó el par `VID_20261108_110401.mp4` ↔ `20261108-110358.gpx` con la franja de
+vía (`--region 0,0.45,1,1`):
+
+```text
+805 fotogramas en 151.2 s (5.3 fps), 5 daños registrados
+```
+
+Los cinco daños quedaron con hora UTC dentro del GPX y coordenada sobre la polilínea
+interpolada (error de interpolación 0.00–0.01 m). El mapa generado tiene 5 marcadores
+y 5 popups, y los 5 recortes existen. Esto valida la interpolación y el flujo
+video+GPX; **no** demuestra el criterio de 10 m contra la posición real, porque para
+eso falta la verdad de campo (#7). La salida está en `salidas/validacion_gpx_110401/`
+(ignorada por Git).
+
+### Salidas (#20)
+
+Sobre `Salidas/Prueba_region/`:
+
+- `danos.csv`: 48 filas, 22 columnas, UTF-8 con BOM, tildes correctas y ningún
+  recorte faltante.
+- `mapa.html`: 48 marcadores, 48 popups, capa por clase y 48 imágenes de recorte
+  enlazadas.
+- Los cinco videos anotados abren y tienen imagen; son 1080x1920 con códec `FMP4`
+  (`mp4v`). Para la presentación falta convertirlos a H.264.
+- La base tiene coordenadas en las 48 filas.
+
+### Notebook de Colab (#8)
+
+`notebooks/entrenamiento_colab.ipynb` tiene 26 celdas; las 13 de código pasan la
+comprobación de sintaxis. Cubre GPU, Drive, clonado, descarga de RDD2022, conversión,
+Roboflow opcional, entrenamiento, reanudación, evaluación y descarga del modelo. No se
+ejecutó en Colab en esta sesión (requiere GPU y cuenta de Google).
+
+### Fusión de daños (#19)
+
+Sobre una copia de `Salidas/Prueba_region/danos.db`, `tapahuecos fusionar --radio 8`
+dejó **48 registros en 48 daños únicos**. No hubo fusiones porque los cinco recorridos
+son tramos consecutivos de la misma salida, no pasadas repetidas por la misma calle.
+La funcionalidad y sus pruebas ya existen; falta el conteo manual para el criterio del
+15 %.
+
+### App Android
+
+- `assembleDebug testDebugUnitTest lintDebug`: compila, las pruebas unitarias pasan y
+  Lint queda con **0 errores** (solo avisos de versiones).
+- APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
+- Pendiente: instalarla en un teléfono real, grabar con la pantalla apagada y
+  comprobar que el GPX exportado se procesa con el pipeline.
 
 ## Issues abiertas al 2026-11-11
 
-Consultadas en GitHub; algunas tareas pueden estar implementadas pero la issue sigue
-abierta porque falta la validación final:
+Se consultaron las 22 issues abiertas. **No hay credenciales de GitHub en este
+entorno**, así que no se pueden comentar, cerrar ni publicar releases desde aquí. Esta
+es la situación verificable de cada una:
 
-- **M1:** #4, #5, #6.
-- **M2:** #8, #10, #11, #12, #13, #15.
-- **M3:** #14, #18, #19, #20, #21.
-- **M4:** #17, #27, #47.
-- **M5:** #29, #30, #31, #32.
+| Issue | Estado local | Qué falta para cerrarla |
+|---|---|---|
+| #1 Configurar repositorio | Bloqueada | Colaboradores, tablero, protección de `main`, reparto: configuración humana en GitHub |
+| #4 Extraer fotogramas y subirlos | Bloqueada | Extraer localmente es posible, pero la subida y la partición requieren cuenta de Roboflow |
+| #5 Etiquetar 300–500 imágenes | Bloqueada | Trabajo humano de etiquetado y revisión cruzada |
+| #6 Exportar y combinar datasets | Bloqueada | Falta `datos/monteria/`; RDD2022 ya está descargado |
+| #8 Notebook de Colab | Implementado | El notebook existe y cubre las celdas pedidas; falta la prueba de 1 época en Colab |
+| #10 Fase 2 (`best.pt`) | Bloqueada | Faltan etiquetas y dataset combinado |
+| #11 Comparar `n` contra `s` | Bloqueada | Depende de #10 y de la prueba de Montería |
+| #12 Reporte de métricas | Parcial | RDD2022 hecho (`reportes/modelo_test.*`); falta la prueba de Montería |
+| #13 Publicar pesos | Parcial | Fase 1 documentada con SHA-256; falta enlace público/release y `best.pt` |
+| #14 Validar video y hora | Verificada en los `.mp4` de la campaña | Falta probar `.MOV`/H.265 y comentar/cerrar en GitHub |
+| #15 Validar detección con `best.pt` | Bloqueada | No existe `best.pt` |
+| #17 Calibrar cámara y área | Bloqueada | Falta video de calibración y `homografia.npy` |
+| #18 Validar georreferenciación | Parcial | Interpolación y mapa verificados; falta verdad de campo para el criterio de 10 m |
+| #19 Registro único y fusión | Implementado | La fusión existe y tiene pruebas; falta el conteo manual del 15 % |
+| #20 Revisar video, mapa y CSV | Verificada localmente | Falta H.264 y revisión en los equipos de todos los integrantes |
+| #21 Probar CLI en Windows y Colab | Parcial | Ayuda, errores y `verificar` revisados en Windows; faltan cámara, Colab y otros equipos |
+| #27 Error de área y posición | Bloqueada | Faltan calibración y `huecos_medidos.csv` |
+| #29 Informe final | Bloqueada | Trabajo humano |
+| #30 Video de demostración | Bloqueada | Trabajo humano; requiere elegir el tramo y convertir a H.264 |
+| #31 Sustentación | Bloqueada | Trabajo humano |
+| #32 Release `v1.0` | Bloqueada | Depende de #13, #29 y de credenciales para publicar |
+| #47 Mejorar D40 | Bloqueada | Faltan ejemplos etiquetados y el ajuste fino; no se arregla con umbrales |
 
-La issue #21 (interfaz de consola) sigue pendiente de cámara física, Colab y revisión
-en Windows, pero dos de sus hallazgos ya se atendieron en esta rama: `config.yaml`
-apunta a `best_rdd.pt` mientras falta `best.pt`, y `modelos/README.md` ya tiene las
-métricas y la ubicación de los pesos.
+## Qué falta hacer, por prioridad
+
+1. **Etiquetar las fotos de Montería** y exportar `datos/monteria/`; sin esto no hay
+   fase 2 ni comparación `n`/`s`.
+2. **Entrenar y publicar `best.pt`**; después repetir la prueba de D40 (#47) y elegir
+   el umbral con datos (#15).
+3. **Calibrar la cámara** y medir 10–20 huecos con cinta; sin esto no hay área en m²
+   ni error de área/posición (#17, #27).
+4. **Levantar la verdad de campo** de un tramo y contar a mano los daños; así se
+   calculan exhaustividad/F1 (#18) y se valida la fusión (#19).
+5. **Probar la app Android en un teléfono** y procesar su GPX con el pipeline.
+6. **Cerrar la entrega**: convertir los videos anotados a H.264, informe, demo,
+   sustentación y release.
 
 ## Comandos para continuar
 
 ```bash
-# 1. Comprobar el entorno y los insumos (no carga YOLO)
+# 1. Comprobar un par real (no carga YOLO)
 tapahuecos verificar --video datos/videos/VID_20261108_110401.mp4 \
-  --gpx datos/gpx/20261108-111252.gpx --pesos modelos/best_rdd.pt
+  --gpx datos/gpx/20261108-110358.gpx --pesos modelos/best_rdd.pt
 
-# 2. Instalar Ultralytics/PyTorch si el paso anterior lo reporta como error
-pip install -e ".[yolo]"
-
-# 3. Prueba real corta, sin GPX, para confirmar que el pipeline corre
+# 2. Procesar el recorrido completo con su GPX
 tapahuecos procesar --video datos/videos/VID_20261108_110401.mp4 \
-  --pesos modelos/best_rdd.pt --region 0,0.43,1,0.65 --max-fotogramas 60 \
-  --salida salidas/smoke_region
+  --gpx datos/gpx/20261108-110358.gpx --region 0,0.45,1,1 \
+  --salida salidas/validacion_gpx_110401
 
-# 4. Cuando haya un GPX que coincida, repetir sin --max-fotogramas y con --gpx
+# 3. Regenerar las métricas de campo desde la base revisada
+python scripts/evaluar.py campo --db Salidas/Prueba_region/danos.db
+
+# 4. Intentar la fusión sobre una copia de la base, no sobre la original
+copy Salidas\Prueba_region\danos.db %TEMP%\danos_fusion.db
+tapahuecos fusionar --db %TEMP%\danos_fusion.db --radio 8
+
+# 5. Compilar y probar la app Android
+cd android && ./gradlew assembleDebug testDebugUnitTest lintDebug
 ```
 
-Nota: la región `0,0.43,1,0.65` es una aproximación para mirar solo la franja de la
-vía en estos videos verticales; ajústela con los recortes antes de sacar métricas.
+Nota: la región `0,0.45,1,1` es una aproximación para la franja de la vía en estos
+videos verticales; ajústela con los recortes antes de sacar métricas.
