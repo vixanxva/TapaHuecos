@@ -14,6 +14,8 @@ anótelos aquí. La carpeta del equipo es
 
 - Entrenado con RDD2022 durante 85 épocas (~6 h 35 min en una GPU T4).
 - Tamaño local: 22,530,474 bytes.
+- SHA-256 local: `15B5169AB597093821554025AC3898B802598F72169F5C7E049430775CE3AFB5`
+  (sirve para comprobar que la copia del Drive es la misma).
 - Métricas de test por clase en `reportes/modelo_test.md` (no versionado).
 - Punto débil conocido: **D40 (huecos)**, recall 0.445 y mAP@0.5 0.505. Ver issue #47.
 - `runs/rdd_completo/weights/last.pt` es el último checkpoint del mismo
