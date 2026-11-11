@@ -176,6 +176,13 @@ comprobación de sintaxis. Cubre GPU, Drive, clonado, descarga de RDD2022, conve
 Roboflow opcional, entrenamiento, reanudación, evaluación y descarga del modelo. No se
 ejecutó en Colab en esta sesión (requiere GPU y cuenta de Google).
 
+### RDD2022 (#6, #12)
+
+Los cinco ZIP pasaron la comprobación de CRC completa (`zipfile.testzip()`): `Japan`
+(23,645 entradas), `India` (17,377), `United_States` (10,816), `Czech` (6,373) y
+`China_MotorBike` (4,460). Están completos y legibles; lo que falta para #6 es la
+exportación de Roboflow de Montería y ejecutar la conversión/combinación local.
+
 ### Fusión de daños (#19)
 
 Sobre una copia de `Salidas/Prueba_region/danos.db`, `tapahuecos fusionar --radio 8`
