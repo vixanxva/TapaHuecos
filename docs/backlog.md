@@ -2,6 +2,9 @@
 
 Lista inicial de issues para el tablero de GitHub Projects, agrupada por hito. Cada línea se convierte en una issue con la plantilla **Tarea**. ☑ indica que ya existe una primera versión en el repositorio, que el equipo debe probar y ajustar con datos reales.
 
+> Para el estado verificado de esta copia local (qué insumos hay, qué falta y qué
+> bloquea cada hito) consulte [estado_actual.md](estado_actual.md).
+
 ## M1 · Datos
 
 - [ ] Descargar RDD2022 y convertirlo con `scripts/preparar_rdd2022.py`
