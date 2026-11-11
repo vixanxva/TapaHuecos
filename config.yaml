@@ -2,7 +2,7 @@
 # src/tapahuecos/config.py; aquí solo hace falta cambiar lo que se quiera ajustar.
 
 modelo:
-  pesos: modelos/best.pt        # resultado de scripts/entrenar.py
+  pesos: modelos/best_rdd.pt    # fase 1; use modelos/best.pt cuando exista (fase 2)
   confianza: 0.35               # umbral mínimo de confianza de YOLO
   iou: 0.5                      # umbral de supresión de no máximos
   tamano_imagen: 640            # debe coincidir con el usado al entrenar

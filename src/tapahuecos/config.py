@@ -11,7 +11,8 @@ import yaml
 
 @dataclass
 class ConfigModelo:
-    pesos: str = "modelos/best.pt"
+    # Fase 1 por defecto mientras no exista best.pt (fase 2, dataset combinado).
+    pesos: str = "modelos/best_rdd.pt"
     confianza: float = 0.35
     iou: float = 0.5
     tamano_imagen: int = 640

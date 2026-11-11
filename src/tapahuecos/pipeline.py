@@ -82,9 +82,16 @@ def procesar(
     ruta_gpx: Path | None = None,
     mostrar: bool = False,
     detector: DetectorProtocolo | None = None,
+    max_fotogramas: int | None = None,
 ) -> Resultado:
-    """Procesa un video (ruta) o una cámara (índice) y genera todas las salidas."""
+    """Procesa un video (ruta) o una cámara (índice) y genera todas las salidas.
+
+    `max_fotogramas` limita cuántos fotogramas se procesan; sirve para una prueba
+    rápida. El video anotado queda con esa duración parcial.
+    """
     validar_region(cfg.video.region)
+    if max_fotogramas is not None and max_fotogramas < 1:
+        raise ValueError("max_fotogramas debe ser mayor que 0")
     carpeta_salida = Path(carpeta_salida)
     carpeta_salida.mkdir(parents=True, exist_ok=True)
     recorrido = Recorrido.desde_gpx(ruta_gpx) if ruta_gpx else None
@@ -200,6 +207,8 @@ def procesar(
                     cv2.imshow(VENTANA, anotado)
                     if cv2.waitKey(1) & 0xFF == ord("q"):
                         break
+                if max_fotogramas is not None and procesados >= max_fotogramas:
+                    break
         finally:
             gestor.finalizar()
             escritor.cerrar()

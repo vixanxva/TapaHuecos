@@ -74,6 +74,26 @@ def test_procesar_sin_video_falla_con_codigo_1(tmp_path):
     assert main(["procesar", "--video", str(tmp_path / "no_existe.mp4")]) == 1
 
 
+def test_max_fotogramas_en_la_consola(
+    tmp_path, datos_prueba, config_yaml, monkeypatch, capsys, caplog
+):
+    monkeypatch.setattr(tapahuecos.detector, "Detector", DetectorSimulado)
+
+    codigo = main([
+        "procesar", "--video", str(datos_prueba["video"]), "--gpx", str(datos_prueba["gpx"]),
+        "--config", str(config_yaml), "--salida", str(tmp_path / "salidas"),
+        "--max-fotogramas", "1",
+    ])
+
+    assert codigo == 0
+    assert "1 fotogramas" in capsys.readouterr().out
+    assert main([
+        "procesar", "--video", str(datos_prueba["video"]), "--config", str(config_yaml),
+        "--salida", str(tmp_path / "otra"), "--max-fotogramas", "0",
+    ]) == 1
+    assert "--max-fotogramas debe ser" in caplog.text
+
+
 # --- Ayuda y mensajes de error (issue #21): en español, sin traza de Python ---
 
 
@@ -137,7 +157,9 @@ def test_config_inexistente_en_espanol(tmp_path, datos_prueba, caplog):
     assert "No such file" not in caplog.text
 
 
-@pytest.mark.parametrize("opcion, valor", [("--inicio", "ayer"), ("--region", "1,2")])
+@pytest.mark.parametrize(
+    "opcion, valor", [("--inicio", "ayer"), ("--region", "1,2"), ("--cada", "0")]
+)
 def test_inicio_y_region_invalidos_explican_el_formato(tmp_path, datos_prueba, caplog, opcion, valor):
     codigo = main(["procesar", "--video", str(datos_prueba["video"]), opcion, valor])
     assert codigo == 1

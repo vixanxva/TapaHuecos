@@ -66,6 +66,25 @@ class DetectorQueMide:
         return [Deteccion((280, 0, 360, 60), clase_por_codigo("D40"), 0.8, 3)]
 
 
+def test_max_fotogramas_limita_la_prueba(tmp_path):
+    video = tmp_path / "VID_20261029_143010.avi"
+    _video_sintetico(video, segundos=3)
+    cfg = Config()
+    cfg.calibracion.homografia = None
+    cfg.calibracion.metros_por_pixel = 0.005
+
+    r = procesar(
+        video, cfg, tmp_path / "salidas", detector=DetectorFalso(), max_fotogramas=4
+    )
+
+    assert r.fotogramas_procesados == 4
+    assert r.danos_registrados == 1
+    with pytest.raises(ValueError):
+        procesar(
+            video, cfg, tmp_path / "otra", detector=DetectorFalso(), max_fotogramas=0
+        )
+
+
 def test_region_de_interes(tmp_path):
     video = tmp_path / "VID_20261029_143010.avi"
     _video_sintetico(video, segundos=1)

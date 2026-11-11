@@ -59,7 +59,7 @@ pytest                   # opcional: todas las pruebas deben pasar
 
 La instalación descarga PyTorch y tarda varios minutos (unos 5 en un portátil con buena conexión). Al final pip puede avisar que hay una versión nueva de pip; no es un error. `[yolo]` instala Ultralytics (y PyTorch); sin ese extra funcionan las pruebas y los comandos `mapa`, `exportar`, `resumen` y `revisar`, pero no `procesar`.
 
-**Pesos del modelo.** Los `.pt` no están en el repositorio. Copie `best_rdd.pt` en la carpeta `modelos/`: lo deja el [notebook de entrenamiento](#entrenamiento) en `MyDrive/TapaHuecos/modelos/` del Drive del equipo, y su enlace se anota en [modelos/README.md](modelos/README.md). `config.yaml` apunta a `modelos/best.pt` (el modelo ajustado con fotos de Montería); mientras ese archivo no exista, agregue `--pesos modelos/best_rdd.pt` a cada `tapahuecos procesar`.
+**Pesos del modelo.** Los `.pt` no están en el repositorio. Copie `best_rdd.pt` en la carpeta `modelos/`: lo deja el [notebook de entrenamiento](#entrenamiento) en `MyDrive/TapaHuecos/modelos/` del Drive del equipo, y su enlace se anota en [modelos/README.md](modelos/README.md). `config.yaml` apunta a `modelos/best_rdd.pt` (fase 1). Cuando exista el modelo ajustado con fotos de Montería (`best.pt`), use `--pesos modelos/best.pt` o cambie esa línea en `config.yaml`.
 
 ## Uso rápido
 
@@ -70,13 +70,16 @@ Ejecute los comandos desde la carpeta `TapaHuecos` con el entorno activo: `confi
 #    Sin calibración el área queda solo en píxeles (aviso "Sin calibración").
 python scripts/calibrar_homografia.py --video datos/videos/calibracion.mp4 --ancho 3 --largo 5
 
-# 2. Procesar un recorrido: video y GPX grabados al mismo tiempo
+# 2. Comprobar que el modelo, la calibración, el video y el GPX están listos
+tapahuecos verificar --video datos/videos/VID_20261029_143015.mp4 --gpx datos/gpx/20261029.gpx --pesos modelos/best_rdd.pt
+
+# 3. Procesar un recorrido: video y GPX grabados al mismo tiempo
 tapahuecos procesar --video datos/videos/VID_20261029_143015.mp4 --gpx datos/gpx/20261029.gpx --pesos modelos/best_rdd.pt
 
-#    Prueba rápida, sin GPX y con 1 de cada 3 fotogramas, en otra carpeta
-tapahuecos procesar --video datos/videos/prueba.mp4 --pesos modelos/best_rdd.pt --cada 3 --salida salidas/prueba
+#    Prueba rápida, sin GPX, con 1 de cada 3 fotogramas y solo 60 fotogramas
+tapahuecos procesar --video datos/videos/prueba.mp4 --pesos modelos/best_rdd.pt --cada 3 --max-fotogramas 60 --salida salidas/prueba
 
-# 3. Revisar los resultados
+# 4. Revisar los resultados
 tapahuecos resumen
 tapahuecos revisar          # abre una ventana para marcar cada daño como real o falso positivo
 python scripts/evaluar.py campo --db salidas/danos.db
@@ -94,7 +97,8 @@ Todos los resultados quedan en `salidas/` (o en la carpeta de `--salida`): `*_an
 
 | Comando | Qué hace |
 |---|---|
-| `tapahuecos procesar` | Procesa un video (`--video`) o la cámara en vivo (`--camara 0`). |
+| `tapahuecos verificar` | Comprueba dependencias, modelo, calibración y, si se indican, el video y el GPX. |
+| `tapahuecos procesar` | Procesa un video (`--video`) o la cámara en vivo (`--camara 0`). `--max-fotogramas` limita la prueba. |
 | `tapahuecos mapa` | Regenera el mapa HTML desde la base de datos (`--todos` para no agrupar repetidos). |
 | `tapahuecos fusionar` | Agrupa el mismo daño registrado en varios recorridos (`--radio` en metros). |
 | `tapahuecos exportar` | Exporta la base de datos a CSV. |
@@ -162,6 +166,7 @@ TapaHuecos/
 - [Guía de captura](docs/guia_captura.md): cómo grabar el video y el GPX.
 - [Guía de etiquetado](docs/guia_etiquetado.md): criterios para etiquetar en Roboflow.
 - [Backlog](docs/backlog.md): issues e hitos del proyecto.
+- [Estado actual](docs/estado_actual.md): qué insumos hay en la copia local y qué falta por hito.
 - [Cómo contribuir](CONTRIBUTING.md): ramas, commits y Pull Requests.
 
 ## Alcance

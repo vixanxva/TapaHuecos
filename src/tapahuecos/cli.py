@@ -73,7 +73,10 @@ def _cmd_procesar(args: argparse.Namespace) -> int:
     cfg = cargar_config(ruta_config)
     if args.pesos:
         cfg.modelo.pesos = args.pesos
-    if args.cada:
+    if args.cada is not None:
+        if args.cada < 1:
+            log.error("--cada debe ser un entero mayor que 0 (se recibió %s)", args.cada)
+            return 1
         cfg.video.cada_n_fotogramas = args.cada
     if args.inicio:
         from tapahuecos.entrada import interpretar_fecha
@@ -107,9 +110,22 @@ def _cmd_procesar(args: argparse.Namespace) -> int:
         return 1
     if args.gpx is None:
         log.warning("Sin --gpx: los daños se registrarán sin coordenadas.")
+    if args.max_fotogramas is not None and args.max_fotogramas < 1:
+        log.error(
+            "--max-fotogramas debe ser un entero mayor que 0 (se recibió %s)",
+            args.max_fotogramas,
+        )
+        return 1
 
     origen = args.video if args.video is not None else args.camara
-    r = procesar(origen, cfg, args.salida, args.gpx, mostrar=args.mostrar or args.camara is not None)
+    r = procesar(
+        origen,
+        cfg,
+        args.salida,
+        args.gpx,
+        mostrar=args.mostrar or args.camara is not None,
+        max_fotogramas=args.max_fotogramas,
+    )
     print(
         f"\nListo. {r.fotogramas_procesados} fotogramas en {r.segundos:.1f} s "
         f"({r.fps:.1f} fps), {r.danos_registrados} daños registrados.\n"
@@ -119,6 +135,33 @@ def _cmd_procesar(args: argparse.Namespace) -> int:
         f"  CSV           : {r.csv}\n"
         f"  Mapa          : {r.mapa}"
     )
+    return 0
+
+
+def _cmd_verificar(args: argparse.Namespace) -> int:
+    from tapahuecos.diagnostico import comprobar_entorno
+
+    ruta_config = args.config
+    if ruta_config is None and CONFIG_PREDETERMINADA.exists():
+        ruta_config = CONFIG_PREDETERMINADA
+    cfg = cargar_config(ruta_config)
+    if args.pesos:
+        cfg.modelo.pesos = args.pesos
+
+    comprobaciones = comprobar_entorno(cfg, ruta_config, args.video, args.gpx)
+    marcas = {"ok": "[OK]", "aviso": "[AVISO]", "error": "[ERROR]"}
+    for comprobacion in comprobaciones:
+        print(f"{marcas[comprobacion.estado]:8} {comprobacion.nombre}: {comprobacion.detalle}")
+
+    errores = sum(c.estado == "error" for c in comprobaciones)
+    avisos = sum(c.estado == "aviso" for c in comprobaciones)
+    if errores:
+        print(
+            f"\n{errores} error(es) y {avisos} aviso(s). "
+            "Corrija los errores antes de ejecutar `tapahuecos procesar`."
+        )
+        return 1
+    print(f"\nTodo listo para procesar ({avisos} aviso(s)).")
     return 0
 
 
@@ -268,10 +311,31 @@ def construir_parser() -> argparse.ArgumentParser:
                         "hace falta si el nombre del video no la trae")
     p.add_argument("--region", metavar="X1,Y1,X2,Y2",
                    help="analizar solo esa parte del fotograma, en fracciones (ej. 0,0.45,1,1)")
+    p.add_argument("--max-fotogramas", type=int, metavar="N",
+                   help="detenerse después de N fotogramas procesados (prueba rápida)")
     p.add_argument("--mostrar", action="store_true",
                    help="mostrar el video mientras se procesa ([q] para detener); necesita "
                         "ventana, no sirve en Colab")
     p.set_defaults(funcion=_cmd_procesar)
+
+    z = sub.add_parser(
+        "verificar", help="comprueba dependencias, modelo, calibración y video/GPX",
+        description="Revisa si el entorno puede ejecutar `procesar`: dependencias de Python,\n"
+                    "configuración, pesos del modelo, calibración y, si se indican, el video y\n"
+                    "el GPX (incluido el solape temporal).",
+        epilog="ejemplo:\n  tapahuecos verificar --video datos/videos/VID_20261029_143015.mp4 "
+               "--gpx datos/gpx/20261029.gpx --pesos modelos/best_rdd.pt",
+    )
+    z.add_argument("--config", type=Path,
+                   help="archivo YAML de parámetros (por defecto config.yaml de la carpeta actual, "
+                        "si existe)")
+    z.add_argument("--pesos", metavar="ARCHIVO.pt",
+                   help="modelo YOLO a comprobar (por defecto: modelo.pesos de config.yaml)")
+    z.add_argument("--video", type=Path,
+                   help="video a comprobar: que se pueda abrir y su hora de inicio")
+    z.add_argument("--gpx", type=Path,
+                   help="GPX a comprobar: que se pueda leer y que se solape con --video")
+    z.set_defaults(funcion=_cmd_verificar)
 
     m = sub.add_parser("mapa", help="regenera el mapa HTML desde la base de datos")
     _argumentos_bd(m)
