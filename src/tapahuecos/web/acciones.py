@@ -134,7 +134,12 @@ ACCIONES: tuple[Accion, ...] = (
                     "conviene ejecutarlo antes de procesar.",
         grupo="Procesar",
         comando=("-m", "tapahuecos", "verificar"),
-        campos=(_video(), _gpx(), _pesos()),
+        campos=(_video(), _gpx(), _pesos(),
+                Campo("inicio", "Hora de inicio",
+                      ayuda="La misma que usará en «Procesar», si el nombre del video no trae la hora",
+                      marcador="2026-11-08T11:04:01"),
+                Campo("region", "Región de interés", ayuda="La misma que usará en «Procesar»",
+                      marcador="0,0.45,1,1")),
     ),
     Accion(
         id="procesar",

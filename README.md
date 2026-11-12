@@ -100,7 +100,7 @@ Todos los resultados quedan en `salidas/` (o en la carpeta de `--salida`): `*_an
 
 | Comando | Qué hace |
 |---|---|
-| `tapahuecos verificar` | Comprueba dependencias, modelo, calibración y, si se indican, el video y el GPX. |
+| `tapahuecos verificar` | Comprueba dependencias, modelo, calibración, mosaicos del mapa y, si se indican, el video y el GPX. Acepta las mismas `--inicio` y `--region` que `procesar`. |
 | `tapahuecos procesar` | Procesa un video (`--video`) o la cámara en vivo (`--camara 0`). `--max-fotogramas` limita la prueba. |
 | `tapahuecos mapa` | Regenera el mapa HTML desde la base de datos (`--todos` para no agrupar repetidos). |
 | `tapahuecos fusionar` | Agrupa el mismo daño registrado en varios recorridos (`--radio` en metros). |

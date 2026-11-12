@@ -64,6 +64,34 @@ class _Parser(argparse.ArgumentParser):
         )
 
 
+def _aplicar_inicio_y_region(args: argparse.Namespace, cfg) -> bool:
+    """Pasa --inicio y --region a `cfg`. False (y un mensaje) si alguno es inválido."""
+    if args.inicio:
+        from tapahuecos.entrada import interpretar_fecha
+
+        try:
+            interpretar_fecha(args.inicio, cfg.video.utc_offset_horas)
+        except ValueError:
+            log.error(
+                "--inicio debe ser una fecha y hora ISO 8601, ej. 2026-10-29T14:30:15 (se recibió %r)",
+                args.inicio,
+            )
+            return False
+        cfg.video.inicio_grabacion = args.inicio
+    if args.region:
+        try:
+            cfg.video.region = [float(v) for v in args.region.split(",")]
+            validar_region(cfg.video.region)
+        except ValueError:
+            log.error(
+                "--region debe ser x1,y1,x2,y2 con números entre 0 y 1, x1 < x2 y y1 < y2 "
+                "(ej. 0,0.45,1,1 = franja inferior); se recibió %r",
+                args.region,
+            )
+            return False
+    return True
+
+
 def _cmd_procesar(args: argparse.Namespace) -> int:
     from tapahuecos.pipeline import procesar
 
@@ -78,29 +106,8 @@ def _cmd_procesar(args: argparse.Namespace) -> int:
             log.error("--cada debe ser un entero mayor que 0 (se recibió %s)", args.cada)
             return 1
         cfg.video.cada_n_fotogramas = args.cada
-    if args.inicio:
-        from tapahuecos.entrada import interpretar_fecha
-
-        try:
-            interpretar_fecha(args.inicio, cfg.video.utc_offset_horas)
-        except ValueError:
-            log.error(
-                "--inicio debe ser una fecha y hora ISO 8601, ej. 2026-10-29T14:30:15 (se recibió %r)",
-                args.inicio,
-            )
-            return 1
-        cfg.video.inicio_grabacion = args.inicio
-    if args.region:
-        try:
-            cfg.video.region = [float(v) for v in args.region.split(",")]
-            validar_region(cfg.video.region)
-        except ValueError:
-            log.error(
-                "--region debe ser x1,y1,x2,y2 con números entre 0 y 1, x1 < x2 y y1 < y2 "
-                "(ej. 0,0.45,1,1 = franja inferior); se recibió %r",
-                args.region,
-            )
-            return 1
+    if not _aplicar_inicio_y_region(args, cfg):
+        return 1
 
     if args.video is not None and not args.video.exists():
         log.error("No existe el video %s", args.video)
@@ -147,6 +154,11 @@ def _cmd_verificar(args: argparse.Namespace) -> int:
     cfg = cargar_config(ruta_config)
     if args.pesos:
         cfg.modelo.pesos = args.pesos
+    # Las mismas --inicio y --region que se usarán en `procesar`: sin --inicio, un video
+    # cuyo nombre no trae la hora se estimaría por la fecha del archivo y podría dar un
+    # falso aviso de que no coincide con el GPX.
+    if not _aplicar_inicio_y_region(args, cfg):
+        return 1
 
     comprobaciones = comprobar_entorno(cfg, ruta_config, args.video, args.gpx)
     marcas = {"ok": "[OK]", "aviso": "[AVISO]", "error": "[ERROR]"}
@@ -342,6 +354,10 @@ def construir_parser() -> argparse.ArgumentParser:
                    help="video a comprobar: que se pueda abrir y su hora de inicio")
     z.add_argument("--gpx", type=Path,
                    help="GPX a comprobar: que se pueda leer y que se solape con --video")
+    z.add_argument("--inicio", metavar="ISO",
+                   help="hora de inicio del video, igual que en `procesar` (si el nombre no la trae)")
+    z.add_argument("--region", metavar="X1,Y1,X2,Y2",
+                   help="región de interés a comprobar, igual que en `procesar`")
     z.set_defaults(funcion=_cmd_verificar)
 
     m = sub.add_parser("mapa", help="regenera el mapa HTML desde la base de datos")

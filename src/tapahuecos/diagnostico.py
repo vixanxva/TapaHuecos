@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import importlib.util
+import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -70,11 +71,21 @@ def _comprobar_modelo(cfg: Config) -> Comprobacion:
     if pesos.is_file():
         tamano_mb = pesos.stat().st_size / 1_000_000
         return Comprobacion("Modelo", "ok", f"{pesos} ({tamano_mb:.1f} MB)")
+    if pesos.parent == Path(".") and _MODELO_DESCARGABLE.match(pesos.name):
+        # p. ej. yolov8n.pt: Ultralytics lo descarga solo la primera vez.
+        return Comprobacion(
+            "Modelo", "aviso",
+            f"{pesos} no está en disco; Ultralytics lo descargará al procesar (requiere internet)",
+        )
     detalle = f"no existe {pesos}"
-    alternativa = Path("modelos/best_rdd.pt")
+    alternativa = pesos.parent / "best_rdd.pt"
     if pesos.name == "best.pt" and alternativa.is_file():
-        detalle += f"; mientras falta best.pt use --pesos {alternativa}"
+        detalle += f"; mientras falta best.pt use --pesos {alternativa.as_posix()}"
     return Comprobacion("Modelo", "error", detalle)
+
+
+# Modelos preentrenados que Ultralytics descarga por nombre (yolov8n.pt, yolo11s.pt…).
+_MODELO_DESCARGABLE = re.compile(r"^yolo(v\d+|\d+)[nsmlx]?(-seg)?\.pt$", re.IGNORECASE)
 
 
 def _comprobar_calibracion(cfg: Config) -> Comprobacion:
@@ -149,9 +160,14 @@ def _comprobar_video(
         captura.release()
 
     duracion = total / fps if total > 0 else 0.0
-    inicio = resolver_inicio(
-        ruta, cfg.video.inicio_grabacion, cfg.video.utc_offset_horas, duracion
-    )
+    try:
+        inicio = resolver_inicio(
+            ruta, cfg.video.inicio_grabacion, cfg.video.utc_offset_horas, duracion
+        )
+    except ValueError as error:
+        return Comprobacion(
+            "Video", "error", f"hora de inicio inválida (video.inicio_grabacion): {error}"
+        ), None, duracion
     detalle = f"{ancho}x{alto}, {duracion:.1f} s, {fps:.1f} fps"
     if inicio is not None:
         detalle += f", inicio {inicio.isoformat(timespec='seconds')}"
@@ -199,7 +215,7 @@ def comprobar_entorno(
     ruta_video: Path | None = None,
     ruta_gpx: Path | None = None,
 ) -> list[Comprobacion]:
-    """Revisa lo necesario para `procesar`; no lanza excepciones por datos inválidos."""
+    """Revisa lo necesario para `procesar`; los datos inválidos se informan como error."""
     comprobaciones = [
         _comprobar_python(),
         _comprobar_config(ruta_config),

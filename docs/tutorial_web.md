@@ -46,7 +46,7 @@ nada y dice qué falta (por ejemplo, «Indique «Video (.mp4)» o «Cámara en v
 
 | Acción | Se rellena automáticamente | Solo trae ejemplo (no se envía) |
 |---|---|---|
-| Verificar el entorno | Video, GPX, Pesos | — |
+| Verificar el entorno | Video, GPX, Pesos | Hora de inicio, Región |
 | Procesar un recorrido | Video, GPX, Pesos | Región, Procesar 1 de cada N, Máximo de fotogramas, Hora de inicio, Cámara |
 | Resumen por clase | Base de datos | Recorrido |
 | Exportar a CSV | Base de datos | Recorrido, Archivo CSV |
