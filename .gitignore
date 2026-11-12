@@ -38,6 +38,8 @@ android/local.properties
 android/.idea/
 *.apk
 *.aab
+*.jks
+*.keystore
 
 # Descargas de Drive (se conservan en disco, no se versionan)
 drive-download-*.zip

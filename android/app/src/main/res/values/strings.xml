@@ -71,7 +71,8 @@
     <string name="dialog_gps_message">La ubicación del teléfono está desactivada. Actívala para empezar a registrar el recorrido.</string>
     <string name="dialog_gps_settings">Abrir ajustes de ubicación</string>
 
-    <string name="export_ok">Guardado en Documents/TapaHuecos</string>
+    <string name="export_ok">Copia pública guardada en:</string>
+    <string name="error_no_points">No se registró ningún punto GPS. El archivo vacío no se guardó: espere a tener señal (precisión en pantalla) antes de detener.</string>
     <string name="file_date">%1$s · %2$s</string>
 
     <string name="battery_settings_unavailable">No se encontró la pantalla de optimización de batería.</string>

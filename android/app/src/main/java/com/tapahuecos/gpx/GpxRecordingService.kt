@@ -246,6 +246,12 @@ class GpxRecordingService : Service(), LocationListener {
 
     private fun stopRecording() {
         if (!active || stopping) return
+        if (acceptedPoints == 0) {
+            // Un GPX sin puntos no le sirve al pipeline (desde_gpx lo rechaza): se borra
+            // y se avisa, en vez de exportarlo como si la grabación hubiera salido bien.
+            failCurrent(getString(R.string.error_no_points))
+            return
+        }
 
         active = false
         stopping = true

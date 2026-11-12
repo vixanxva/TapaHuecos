@@ -12,6 +12,10 @@ el archivo que después se pasa a `tapahuecos procesar`.
 - Usa **solo GPS**: no mezcla la ubicación por red, que tiene decenas de metros de error.
 - Descarta puntos sin coordenada o con precisión peor que 100 m y muestra en pantalla
   la duración, los puntos, la distancia y la precisión.
+- Si se detiene sin haber registrado ningún punto, no guarda el GPX vacío (el pipeline
+  no lo podría usar) y avisa en pantalla.
+- Los recorridos no se suben al respaldo de Google (`allowBackup="false"`): son datos de
+  ubicación.
 - Escribe el GPX de forma **incremental**: después de cada punto el XML ya está
   cerrado y es válido, aunque Android mate el proceso o se agote la batería.
 - Guarda una copia privada y exporta otra a `Documents/TapaHuecos` (en Android 10 o
