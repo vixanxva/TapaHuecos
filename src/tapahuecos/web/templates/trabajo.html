@@ -6,7 +6,7 @@
 <p class="comando"><code>{{ trabajo.comando }}</code></p>
 <p class="estado en-curso" id="estado" data-id="{{ trabajo.id }}">En curso…</p>
 
-<pre class="salida" id="salida" data-desde="{{ lineas|length }}">{% for linea in lineas %}{{ linea }}
+<pre class="salida" id="salida" data-desde="{{ total }}">{% for linea in lineas %}{{ linea }}
 {% endfor %}</pre>
 
 <p class="migas">

@@ -33,21 +33,33 @@ class Trabajo:
         self.inicio = time.time()
         self.fin: float | None = None
         self._lineas: list[str] = []
+        self._descartadas = 0  # líneas viejas que se borraron por el tope de MAX_LINEAS
         self._lock = threading.Lock()
 
     def agregar(self, linea: str) -> None:
         with self._lock:
             self._lineas.append(linea)
-            if len(self._lineas) > MAX_LINEAS:
-                del self._lineas[: len(self._lineas) - MAX_LINEAS]
+            sobrantes = len(self._lineas) - MAX_LINEAS
+            if sobrantes > 0:
+                del self._lineas[:sobrantes]
+                self._descartadas += sobrantes
+
+    def leer(self, indice: int) -> tuple[list[str], int]:
+        """Líneas desde el índice absoluto `indice` y el total emitido, en una sola lectura.
+
+        Los índices cuentan todas las líneas emitidas, también las que ya se descartaron
+        por el tope; así el navegador sigue recibiendo salida aunque se pase de MAX_LINEAS.
+        """
+        with self._lock:
+            inicio = max(0, indice - self._descartadas)
+            return self._lineas[inicio:], self._descartadas + len(self._lineas)
 
     def desde(self, indice: int) -> list[str]:
-        with self._lock:
-            return self._lineas[max(0, indice):]
+        return self.leer(indice)[0]
 
     def instantanea(self) -> dict:
         with self._lock:
-            total = len(self._lineas)
+            total = self._descartadas + len(self._lineas)
         return {
             "id": self.id,
             "accion": self.accion_nombre,
