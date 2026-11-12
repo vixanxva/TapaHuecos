@@ -20,7 +20,8 @@ jobs:
       - name: Dependencias del sistema para OpenCV
         run: sudo apt-get update && sudo apt-get install -y libgl1
       - name: Instalar (sin Ultralytics; las pruebas no lo necesitan)
-        run: pip install -e ".[dev]"
+        # Flask es liviano y sin él las pruebas de la interfaz web se saltan en silencio.
+        run: pip install -e ".[dev,web]"
       - name: Lint
         run: ruff check src scripts tests
       - name: Generar datos de prueba

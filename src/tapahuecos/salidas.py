@@ -6,6 +6,7 @@ import html
 import logging
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import cv2
 import numpy as np
@@ -17,6 +18,12 @@ log = logging.getLogger(__name__)
 
 MONTERIA = (8.7479, -75.8814)
 _FUENTE = cv2.FONT_HERSHEY_SIMPLEX
+
+# Los mosaicos por defecto. OpenStreetMap bloquea sus servidores voluntarios cuando la
+# página se abre muchas veces ("403 Access blocked ... tile usage policy") y el mapa de
+# CARTO ahora exige clave de API, así que se usa el mapa de calles de Esri, que no pide
+# clave. Cambiable en config.yaml (mapa.tiles): cualquier nombre de folium/xYZ o una URL.
+TILES_PREDETERMINADOS = "Esri.WorldStreetMap"
 
 
 def _escala(imagen: np.ndarray) -> float:
@@ -102,17 +109,48 @@ def _popup(fila: dict, ruta_imagen: str) -> str:
     )
 
 
-def generar_mapa(filas: list[dict], ruta_html: Path, carpeta_base: Path) -> Path:
-    """Mapa interactivo con una capa por tipo de daño. `carpeta_base` es donde está la BD."""
+def capa_de_mosaicos(tiles: str):
+    """Capa de folium para `mapa.tiles`: un nombre de proveedor o una URL con {z}/{x}/{y}.
+
+    Folium exige atribución para las URL propias; se arma con el dominio del servidor.
+    Lanza ValueError con un mensaje claro si el nombre no es un proveedor conocido, para
+    que `procesar` falle al empezar y no después de recorrer todo el video.
+    """
     import folium
 
+    atribucion = None
+    if "{z}" in tiles:
+        atribucion = f"Mosaicos: {urlsplit(tiles).netloc or tiles}"
+    try:
+        return folium.TileLayer(tiles, attr=atribucion)
+    except ValueError as error:
+        raise ValueError(
+            f"mapa.tiles: «{tiles}» no es un proveedor de mosaicos conocido ni una URL con "
+            "{z}/{x}/{y}. Ejemplos: Esri.WorldStreetMap, Esri.WorldImagery, OpenTopoMap."
+        ) from error
+
+
+def generar_mapa(
+    filas: list[dict],
+    ruta_html: Path,
+    carpeta_base: Path,
+    tiles: str = TILES_PREDETERMINADOS,
+) -> Path:
+    """Mapa interactivo con una capa por tipo de daño. `carpeta_base` es donde está la BD.
+
+    `tiles` es el nombre o la URL del proveedor de mosaicos (por defecto, el de Esri).
+    """
+    import folium
+
+    capa_base = capa_de_mosaicos(tiles)
     ruta_html = Path(ruta_html)
     ruta_html.parent.mkdir(parents=True, exist_ok=True)
     con_gps = [f for f in filas if f["latitud"] is not None and f["longitud"] is not None]
     if len(con_gps) < len(filas):
         log.warning("%d daños sin coordenada no aparecen en el mapa.", len(filas) - len(con_gps))
 
-    mapa = folium.Map(location=MONTERIA, zoom_start=14, tiles="OpenStreetMap")
+    mapa = folium.Map(location=MONTERIA, zoom_start=14, tiles=None)
+    capa_base.add_to(mapa)
     capas: dict[str, folium.FeatureGroup] = {}
     for fila in con_gps:
         clase = clase_por_codigo(fila["clase"])

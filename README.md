@@ -7,7 +7,8 @@ Herramienta de consola en Python que recibe un video grabado desde un vehículo 
 3. una **base de datos SQLite** con el tipo, el tamaño aproximado y la coordenada GPS de cada daño;
 4. un **mapa HTML** con todos los puntos.
 
-No es una app móvil ni una página web. Probado con videos de calles de Montería (Córdoba, Colombia).
+El procesamiento es una herramienta de consola, no una página web. Probado con videos de
+calles de Montería (Córdoba, Colombia).
 
 ```
 Video (.mp4) + Recorrido GPS (.gpx)
@@ -31,46 +32,107 @@ Video (.mp4) + Recorrido GPS (.gpx)
 
 ## Instalación
 
-Requiere Python 3.10 o superior.
+Requiere **Python 3.10, 3.11 o 3.12** (las versiones que prueba la CI) y Git. Compruébelo con `python --version`; en Windows, si `python` abre la Microsoft Store, instale Python desde [python.org](https://www.python.org/downloads/) marcando *Add python.exe to PATH*. No hace falta ffmpeg ni GPU: OpenCV lee los `.mp4` y PyTorch se instala en su versión para CPU.
 
 ```bash
 git clone https://github.com/vixanxva/TapaHuecos.git
 cd TapaHuecos
 python -m venv .venv
-# Windows: .venv\Scripts\activate    ·    Linux/macOS: source .venv/bin/activate
-pip install -e ".[yolo,dev]"
 ```
 
-`[yolo]` instala Ultralytics (y PyTorch). Sin ese extra funcionan las pruebas y los comandos `mapa`, `exportar`, `resumen` y `revisar`.
+Active el entorno (en cada terminal nueva):
+
+| Terminal | Comando |
+|---|---|
+| PowerShell (Windows) | `.venv\Scripts\Activate.ps1` |
+| cmd (Windows) | `.venv\Scripts\activate.bat` |
+| Linux / macOS | `source .venv/bin/activate` |
+
+Si PowerShell responde que *la ejecución de scripts está deshabilitada*, ejecute una vez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` y vuelva a activar, o use el entorno sin activarlo: `.venv\Scripts\tapahuecos.exe` en lugar de `tapahuecos` y `.venv\Scripts\python.exe` en lugar de `python`.
+
+Con el entorno activo (el indicador muestra `(.venv)`):
+
+```bash
+pip install -e ".[yolo,dev]"
+tapahuecos --version     # comprueba la instalación
+pytest                   # opcional: todas las pruebas deben pasar
+```
+
+La instalación descarga PyTorch y tarda varios minutos (unos 5 en un portátil con buena conexión). Al final pip puede avisar que hay una versión nueva de pip; no es un error. `[yolo]` instala Ultralytics (y PyTorch); sin ese extra funcionan las pruebas y los comandos `mapa`, `exportar`, `resumen` y `revisar`, pero no `procesar`.
+
+**Pesos del modelo.** Los `.pt` no están en el repositorio. Copie `best_rdd.pt` en la carpeta `modelos/`: lo deja el [notebook de entrenamiento](#entrenamiento) en `MyDrive/TapaHuecos/modelos/` del Drive del equipo, y su enlace se anota en [modelos/README.md](modelos/README.md). `config.yaml` apunta a `modelos/best_rdd.pt` (fase 1). Cuando exista el modelo ajustado con fotos de Montería (`best.pt`), use `--pesos modelos/best.pt` o cambie esa línea en `config.yaml`.
 
 ## Uso rápido
 
+Ejecute los comandos desde la carpeta `TapaHuecos` con el entorno activo: `config.yaml`, `salidas/` y las rutas relativas se buscan desde la carpeta actual.
+
 ```bash
-# 1. (Una vez) calibrar la cámara para obtener áreas en m²
+# 1. (Opcional, una vez) calibrar la cámara para obtener áreas en m²; necesita un video de calibración.
+#    Sin calibración el área queda solo en píxeles (aviso "Sin calibración").
 python scripts/calibrar_homografia.py --video datos/videos/calibracion.mp4 --ancho 3 --largo 5
 
-# 2. Procesar un recorrido
-tapahuecos procesar --video datos/videos/VID_20261029_143015.mp4 --gpx datos/gpx/20261029.gpx
+# 2. Comprobar que el modelo, la calibración, el video y el GPX están listos
+tapahuecos verificar --video datos/videos/VID_20261029_143015.mp4 --gpx datos/gpx/20261029.gpx --pesos modelos/best_rdd.pt
 
-# 3. Revisar los resultados
+# 3. Procesar un recorrido: video y GPX grabados al mismo tiempo
+tapahuecos procesar --video datos/videos/VID_20261029_143015.mp4 --gpx datos/gpx/20261029.gpx --pesos modelos/best_rdd.pt
+
+#    Prueba rápida, sin GPX, con 1 de cada 3 fotogramas y solo 60 fotogramas
+tapahuecos procesar --video datos/videos/prueba.mp4 --pesos modelos/best_rdd.pt --cada 3 --max-fotogramas 60 --salida salidas/prueba
+
+# 4. Revisar los resultados
 tapahuecos resumen
-tapahuecos revisar          # marcar cada daño como real o falso positivo
+tapahuecos revisar          # abre una ventana para marcar cada daño como real o falso positivo
 python scripts/evaluar.py campo --db salidas/danos.db
 python scripts/evaluar.py area --medidos datos/huecos_medidos.csv   # error de área y de posición
 ```
 
-Todos los resultados quedan en `salidas/`: `*_anotado.mp4`, `recortes/`, `danos.db`, `danos.csv` y `mapa.html`. La base de datos acumula todos los recorridos procesados en esa carpeta.
+- **Hora del video.** Se toma del nombre `VID_AAAAMMDD_HHMMSS.mp4`. Si el video se llama de otra forma, indique la hora local de inicio con `--inicio 2026-10-29T14:30:15`; si no, se estima con la fecha de modificación del archivo y los puntos pueden quedar corridos en el mapa.
+- **Sin `--gpx`** los daños se registran sin coordenadas.
+- **Tiempo.** En un portátil sin GPU, un video de 35 s en 1080p con `--cada 3` tarda alrededor de un minuto (6 fotogramas por segundo).
+- **Cámara en vivo.** `tapahuecos procesar --camara 0 --pesos modelos/best_rdd.pt` abre una ventana con la cámara del portátil; se termina con `q`.
+- **Colab.** `tapahuecos revisar` y las opciones `--mostrar` y `--camara` **no funcionan en Colab**, porque necesitan una ventana. Allí se usa `procesar` con `--video`; luego se descarga la carpeta de resultados y `revisar` se ejecuta en un equipo propio.
+- **Ayuda.** `tapahuecos --help` lista los comandos y `tapahuecos procesar --help` las opciones de cada uno, con sus valores por defecto.
+
+Todos los resultados quedan en `salidas/` (o en la carpeta de `--salida`): `*_anotado.mp4`, `recortes/`, `danos.db`, `danos.csv` y `mapa.html`. La base de datos acumula todos los recorridos procesados en esa carpeta.
 
 | Comando | Qué hace |
 |---|---|
-| `tapahuecos procesar` | Procesa un video (`--video`) o la cámara en vivo (`--camara 0`). |
+| `tapahuecos verificar` | Comprueba dependencias, modelo, calibración, mosaicos del mapa y, si se indican, el video y el GPX. Acepta las mismas `--inicio` y `--region` que `procesar`. |
+| `tapahuecos procesar` | Procesa un video (`--video`) o la cámara en vivo (`--camara 0`). `--max-fotogramas` limita la prueba. |
 | `tapahuecos mapa` | Regenera el mapa HTML desde la base de datos (`--todos` para no agrupar repetidos). |
 | `tapahuecos fusionar` | Agrupa el mismo daño registrado en varios recorridos (`--radio` en metros). |
 | `tapahuecos exportar` | Exporta la base de datos a CSV. |
 | `tapahuecos resumen` | Tabla de daños por clase. |
-| `tapahuecos revisar` | Revisión manual de cada recorte (para las métricas de campo). |
+| `tapahuecos revisar` | Revisión manual de cada recorte (para las métricas de campo). Necesita ventana: no funciona en Colab. |
 
 Los parámetros (umbral de confianza, salto de fotogramas, zona horaria, segmentación, calibración) están en [config.yaml](config.yaml).
+
+## Interfaz web (opcional)
+
+Para no depender de la consola durante la presentación, hay una interfaz web local que
+lista todas las acciones del proyecto y las ejecuta en el navegador, mostrando la salida
+en vivo. No es un servidor multiusuario: corre en `127.0.0.1`, en tu equipo, y por dentro
+usa los mismos comandos de `tapahuecos` y los mismos scripts.
+
+```bash
+pip install -e ".[web]"
+tapahuecos-web            # o: python -m tapahuecos.web
+```
+
+Abrir <http://127.0.0.1:5000>. Desde ahí se puede:
+
+- Ejecutar `verificar`, `procesar`, `mapa`, `fusionar`, `exportar` y `resumen`.
+- Ver las métricas de campo y el error de área (`scripts/evaluar.py`).
+- Calibrar la cámara, generar la demo sintética, preparar RDD2022, combinar datasets y
+  entrenar.
+- **Revisar los daños sin ventanas**: una galería marca cada recorte como real o falso
+  positivo; reemplaza a `tapahuecos revisar`, que necesita ventana y no funciona en Colab.
+- Abrir el mapa, los videos anotados y los recortes de cada carpeta de `salidas/`.
+
+Las acciones se declaran en `src/tapahuecos/web/acciones.py`; agregar una nueva es una
+entrada más en esa lista. Tutorial paso a paso (incluidas las funciones de datos y modelo
+y qué campos traen valor y cuáles solo un ejemplo): [docs/tutorial_web.md](docs/tutorial_web.md).
 
 ## Demo sin videos reales
 
@@ -117,7 +179,8 @@ TapaHuecos/
 │   ├── pipeline.py             orquesta las 6 etapas
 │   ├── evaluacion.py           métricas de campo, error de área y de posición
 │   ├── clases.py               D00, D10, D20, D40
-│   └── cli.py                  comandos de consola
+│   ├── cli.py                  comandos de consola
+│   └── web/                    interfaz web local (opcional): acciones, plantillas y CSS
 ├── scripts/                    preparar datos, entrenar, evaluar, calibrar
 ├── tests/                      pruebas (no requieren YOLO ni GPU)
 ├── docs/                       documento técnico, guías y backlog
@@ -129,15 +192,21 @@ TapaHuecos/
 
 - [Documento técnico](docs/documento_tecnico.md): alcance, arquitectura, cada etapa, métricas y riesgos.
 - [Guía de captura](docs/guia_captura.md): cómo grabar el video y el GPX.
+- [Tutorial de la interfaz web](docs/tutorial_web.md): usar el proyecto desde el navegador.
+- [Diapositivas de la sustentación](docs/diapositivas.md): esqueleto listo para presentar.
+- [Guion de la presentación](docs/presentacion.md): qué decir, en qué orden y qué responder.
+- [Conceptos clave desde cero](docs/conceptos.md): el proyecto explicado para quien no
+  conoce la tecnología.
 - [Guía de etiquetado](docs/guia_etiquetado.md): criterios para etiquetar en Roboflow.
 - [Backlog](docs/backlog.md): issues e hitos del proyecto.
+- [Estado actual](docs/estado_actual.md): qué insumos hay en la copia local y qué falta por hito.
 - [Cómo contribuir](CONTRIBUTING.md): ramas, commits y Pull Requests.
 
 ## Alcance
 
 **Hace:** detectar cuatro tipos de daño en imágenes y video, resaltarlos y estimar su área, ubicarlos por GPS, registrarlos y mostrarlos en un mapa, y reportar métricas con videos reales.
 
-**No hace:** medir la profundidad de los huecos (no es confiable con una sola cámara), procesar en tiempo real dentro del vehículo (el modo cámara funciona, pero a pocos fps en un portátil sin GPU), ni ofrecer interfaz gráfica, servidor web, app móvil o envío automático de reportes. Ver la sección 2 del [documento técnico](docs/documento_tecnico.md).
+**No hace:** medir la profundidad de los huecos (no es confiable con una sola cámara), procesar en tiempo real dentro del vehículo (el modo cámara funciona, pero a pocos fps en un portátil sin GPU), ni ofrecer un servidor web multiusuario o envío automático de reportes. Hay una **interfaz web local** para ejecutar los comandos desde el navegador; no graba video ni detecta daños en el teléfono. Ver la sección 2 del [documento técnico](docs/documento_tecnico.md).
 
 ## Licencia
 

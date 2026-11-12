@@ -145,10 +145,17 @@ Reglas del registro:
 dibujar_deteccion(imagen, det, mascara=None, area_m2=None) -> None   # dibuja sobre `imagen`
 dibujar_cabecera(imagen, texto) -> None
 EscritorVideo(ruta, fps).escribir(imagen); .cerrar()                 # el tamaño lo fija el primer fotograma
-generar_mapa(filas, ruta_html, carpeta_base) -> Path
+generar_mapa(filas, ruta_html, carpeta_base, tiles="Esri.WorldStreetMap") -> Path
+capa_de_mosaicos(tiles) -> folium.TileLayer                          # ValueError si `tiles` no es válido
 exportar_csv(filas, ruta) -> Path                                    # UTF-8 con BOM, para Excel
 resumen(filas) -> pandas.DataFrame
 ```
+
+`tiles` sale de `config.yaml` (`mapa.tiles`): un nombre de proveedor de folium/xyzservices
+(por defecto `Esri.WorldStreetMap`, que no pide clave) o una URL con `{z}/{x}/{y}`; a las
+URL propias se les pone como atribución el dominio del servidor. Un valor que no sea ninguna
+de las dos cosas da `ValueError`: `procesar` lo comprueba antes de leer el video y
+`verificar` lo informa como error.
 
 ### Columnas del CSV (`danos.csv`)
 
@@ -179,10 +186,14 @@ Son las de `BaseDatos.danos()`, en este orden:
 
 ```python
 procesar(origen: Path | int, cfg: Config, carpeta_salida: Path, ruta_gpx: Path | None = None,
-         mostrar: bool = False, detector: DetectorProtocolo | None = None) -> Resultado
+         mostrar: bool = False, detector: DetectorProtocolo | None = None,
+         max_fotogramas: int | None = None) -> Resultado
 ```
 
-`tapahuecos procesar --video V [--gpx G] [--config C] [--salida S] [--pesos P] [--cada N] [--inicio ISO] [--region X1,Y1,X2,Y2]` deja en `S`:
+`max_fotogramas` detiene el procesamiento después de esa cantidad de fotogramas
+(útil para pruebas rápidas); `None` procesa el video completo. Debe ser mayor que 0.
+
+`tapahuecos procesar --video V [--gpx G] [--config C] [--salida S] [--pesos P] [--cada N] [--inicio ISO] [--region X1,Y1,X2,Y2] [--max-fotogramas N]` deja en `S`:
 
 | Archivo | Contenido |
 |---|---|
@@ -192,7 +203,16 @@ procesar(origen: Path | int, cfg: Config, carpeta_salida: Path, ruta_gpx: Path |
 | `danos.csv` | todos los daños de la BD |
 | `mapa.html` | mapa Folium, una capa por clase, un punto por daño único |
 
-Otros comandos: `mapa`, `fusionar`, `exportar`, `resumen`, `revisar`. El código de salida es `0` si todo salió bien y `1` ante archivos inexistentes o parámetros inválidos.
+Otros comandos: `verificar`, `mapa`, `fusionar`, `exportar`, `resumen`, `revisar`. El código de salida es `0` si todo salió bien y `1` ante archivos inexistentes o parámetros inválidos.
+
+`tapahuecos mapa --db D [--config C] [--salida S] [--recorrido N] [--todos]` toma los
+mosaicos de `C` (por defecto `config.yaml`, si existe).
+
+`tapahuecos verificar [--config C] [--pesos P] [--video V] [--gpx G] [--inicio ISO] [--region X1,Y1,X2,Y2]` no carga YOLO
+(`--inicio` y `--region` se interpretan igual que en `procesar`):
+comprueba dependencias, configuración, región, pesos, calibración, mosaicos del mapa y, si se indican,
+el video y el GPX (incluido el solape temporal). Devuelve `1` si alguna comprobación
+es un error; los avisos no impiden procesar.
 
 ## Datos de prueba — `tests/fixtures/generar.py`
 

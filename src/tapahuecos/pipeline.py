@@ -21,6 +21,7 @@ from tapahuecos.medicion import Medidor
 from tapahuecos.registro import BaseDatos, GestorDanos, Observacion
 from tapahuecos.salidas import (
     EscritorVideo,
+    capa_de_mosaicos,
     dibujar_cabecera,
     dibujar_deteccion,
     exportar_csv,
@@ -82,9 +83,17 @@ def procesar(
     ruta_gpx: Path | None = None,
     mostrar: bool = False,
     detector: DetectorProtocolo | None = None,
+    max_fotogramas: int | None = None,
 ) -> Resultado:
-    """Procesa un video (ruta) o una cámara (índice) y genera todas las salidas."""
+    """Procesa un video (ruta) o una cámara (índice) y genera todas las salidas.
+
+    `max_fotogramas` limita cuántos fotogramas se procesan; sirve para una prueba
+    rápida. El video anotado queda con esa duración parcial.
+    """
     validar_region(cfg.video.region)
+    capa_de_mosaicos(cfg.mapa.tiles)  # un mapa.tiles inválido falla aquí, no tras todo el video
+    if max_fotogramas is not None and max_fotogramas < 1:
+        raise ValueError("max_fotogramas debe ser mayor que 0")
     carpeta_salida = Path(carpeta_salida)
     carpeta_salida.mkdir(parents=True, exist_ok=True)
     recorrido = Recorrido.desde_gpx(ruta_gpx) if ruta_gpx else None
@@ -200,6 +209,8 @@ def procesar(
                     cv2.imshow(VENTANA, anotado)
                     if cv2.waitKey(1) & 0xFF == ord("q"):
                         break
+                if max_fotogramas is not None and procesados >= max_fotogramas:
+                    break
         finally:
             gestor.finalizar()
             escritor.cerrar()
@@ -211,8 +222,9 @@ def procesar(
         # cada daño una vez aunque se haya registrado en varios recorridos.
         fusionar_bd(bd, cfg.registro.radio_fusion_m)
         todas = bd.danos()
-        mapa = generar_mapa(unicos(todas), carpeta_salida / "mapa.html", carpeta_salida)
+        # El CSV va primero: si el mapa fallara, los datos ya quedan exportados.
         csv = exportar_csv(todas, carpeta_salida / "danos.csv")
+        mapa = generar_mapa(unicos(todas), carpeta_salida / "mapa.html", carpeta_salida, cfg.mapa.tiles)
 
     return Resultado(
         recorrido_id=recorrido_id,

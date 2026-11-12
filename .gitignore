@@ -29,6 +29,9 @@ runs/
 # Datos de prueba generados por tests/fixtures/generar.py
 tests/fixtures/generados/
 
+# Descargas de Drive (se conservan en disco, no se versionan)
+drive-download-*.zip
+
 # Editor / sistema
 .vscode/
 .idea/

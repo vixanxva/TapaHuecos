@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block cuerpo %}
+<p class="intro">
+  Ejecute cualquier opción del proyecto desde el navegador. Cada acción lanza el mismo
+  comando de consola y muestra su salida en vivo; nada se ejecuta «por debajo» distinto
+  de lo que haría la terminal.
+</p>
+
+{% for grupo, lista in grupos.items() %}
+<section class="grupo">
+  <h2>{{ grupo }}</h2>
+  <div class="rejilla">
+    {% for a in lista %}
+    <a class="tarjeta" href="{{ url_for('accion', accion_id=a.id) }}">
+      <h3>{{ a.nombre }}</h3>
+      <p>{{ a.descripcion }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+{% if trabajos %}
+<section class="grupo">
+  <h2>Trabajos recientes</h2>
+  <ul class="lista-trabajos">
+    {% for t in trabajos %}
+    <li>
+      <a href="{{ url_for('trabajo', trabajo_id=t.id) }}">{{ t.accion_nombre }}</a>
+      <span class="etiqueta {{ t.estado }}">{{ t.estado }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if salidas %}
+<section class="grupo">
+  <h2>Últimas salidas</h2>
+  <div class="rejilla">
+    {% for s in salidas %}
+    <div class="tarjeta estatica">
+      <h3>{{ s.nombre }}</h3>
+      <p>{{ s.recortes }} recortes{% if s.db %} · base de datos{% endif %}</p>
+      <p class="enlaces">
+        {% if s.mapa %}<a href="{{ url_for('archivo', ruta=s.rel + '/mapa.html') }}">Mapa</a>{% endif %}
+        <a href="{{ url_for('lista_salidas') }}">Ver más</a>
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
