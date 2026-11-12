@@ -221,6 +221,10 @@ TapaHuecos/
 - [Documento técnico](docs/documento_tecnico.md): alcance, arquitectura, cada etapa, métricas y riesgos.
 - [Guía de captura](docs/guia_captura.md): cómo grabar el video y el GPX.
 - [Tutorial de la interfaz web](docs/tutorial_web.md): usar el proyecto desde el navegador.
+- [Diapositivas de la sustentación](docs/diapositivas.md): esqueleto listo para presentar.
+- [Guion de la presentación](docs/presentacion.md): qué decir, en qué orden y qué responder.
+- [Conceptos clave desde cero](docs/conceptos.md): el proyecto explicado para quien no
+  conoce la tecnología.
 - [App Android](android/README.md): cómo compilar, instalar y usar la grabadora de GPX.
 - [Guía de etiquetado](docs/guia_etiquetado.md): criterios para etiquetar en Roboflow.
 - [Backlog](docs/backlog.md): issues e hitos del proyecto.
