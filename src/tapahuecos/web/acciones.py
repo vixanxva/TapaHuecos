@@ -44,7 +44,9 @@ class Accion:
     comando: tuple[str, ...]
     campos: tuple[Campo, ...] = ()
     nota: str = ""
-    requiere_uno_de: tuple[str, ...] = ()  # exige que al menos uno de estos campos tenga valor
+    # Exige que exactamente uno de estos campos tenga valor (p. ej. --video o --camara:
+    # la CLI rechaza los dos a la vez).
+    requiere_uno_de: tuple[str, ...] = ()
 
     def campo(self, nombre: str) -> Campo | None:
         return next((c for c in self.campos if c.nombre == nombre), None)
@@ -62,10 +64,15 @@ class Accion:
                 continue
             argv.append(f"--{campo.nombre}")
             if campo.tipo == "lista":
-                argv.extend(parte for parte in re.split(r"[,\s]+", valor) if parte)
+                argv.extend(partes_de_lista(valor))
             else:
                 argv.append(valor)
         return argv
+
+
+def partes_de_lista(valor: str) -> list[str]:
+    """Los valores de un campo de tipo lista, separados por comas o espacios."""
+    return [parte for parte in re.split(r"[,\s]+", valor.strip()) if parte]
 
 
 RECORRIDO = Campo("recorrido", "Recorrido", tipo="numero",

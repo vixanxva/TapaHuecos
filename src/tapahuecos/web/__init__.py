@@ -16,6 +16,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from flask import (
     Flask,
@@ -53,7 +54,7 @@ def _config(raiz: Path) -> Config:
 def _cuenta_danos(ruta: Path) -> int:
     """Número de daños de una base de datos, o -1 si no se puede leer."""
     try:
-        with sqlite3.connect(f"file:{ruta}?mode=ro", uri=True) as con:
+        with sqlite3.connect(f"{ruta.resolve().as_uri()}?mode=ro", uri=True) as con:
             return int(con.execute("SELECT COUNT(*) FROM danos").fetchone()[0])
     except (sqlite3.Error, OSError):
         return -1
@@ -156,12 +157,37 @@ def _validar(accion: cat.Accion, valores: dict[str, str], raiz: Path) -> list[st
             errores.append(f"Falta «{campo.etiqueta}».")
         elif valor and campo.existe and not (raiz / valor).exists():
             errores.append(f"No existe «{valor}» ({campo.etiqueta}).")
-    if accion.requiere_uno_de and not any((valores.get(n) or "").strip() for n in accion.requiere_uno_de):
+        elif campo.tipo == "lista" and any(_parece_opcion(p) for p in cat.partes_de_lista(valor)):
+            # Un valor como "Japan --vacias 0.9" metería otra opción en el comando.
+            errores.append(f"«{campo.etiqueta}» no puede contener opciones que empiecen por «-».")
+    if accion.requiere_uno_de:
+        con_valor = [n for n in accion.requiere_uno_de if (valores.get(n) or "").strip()]
         etiquetas = [
             f"«{accion.campo(n).etiqueta}»" for n in accion.requiere_uno_de if accion.campo(n)
         ]
-        errores.append(f"Indique {' o '.join(etiquetas)}.")
+        if not con_valor:
+            errores.append(f"Indique {' o '.join(etiquetas)}.")
+        elif len(con_valor) > 1:
+            # La CLI rechaza las dos a la vez (p. ej. --video y --camara); se avisa antes.
+            errores.append(f"Indique solo uno: {' o '.join(etiquetas)}; deje vacío el otro.")
     return errores
+
+
+def _parece_opcion(parte: str) -> bool:
+    """True si `parte` se leería como una opción de la línea de comandos (no un número)."""
+    if not parte.startswith("-"):
+        return False
+    try:
+        float(parte)
+    except ValueError:
+        return True
+    return False
+
+
+def _bd_dentro(raiz: Path, db_rel: str) -> Path | None:
+    """Ruta absoluta de la base de datos si está dentro del proyecto; None si sale de él."""
+    ruta = (raiz / db_rel).resolve()
+    return ruta if raiz in ruta.parents else None
 
 
 def _salidas(raiz: Path) -> list[dict]:
@@ -197,13 +223,45 @@ def create_app(raiz: str | Path | None = None) -> Flask:
     app.config["RAIZ"] = raiz_resuelta
     app.config["EJECUTOR"] = Ejecutor(raiz_resuelta)
     app.config["MAX_CONTENT_LENGTH"] = 1_000_000  # el formulario es diminuto; nada de subidas
+    # Nombres de host aceptados en la cabecera Host; None desactiva la comprobación
+    # (solo cuando se arranca a propósito con --host distinto de 127.0.0.1).
+    app.config["HOSTS_PERMITIDOS"] = HOSTS_LOCALES
     _registrar_rutas(app)
     return app
+
+
+HOSTS_LOCALES = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
+def _nombre_host(valor: str) -> str:
+    """El nombre de host sin puerto ni corchetes ('[::1]:5000' -> '::1')."""
+    return (urlsplit(f"//{valor}").hostname or "").lower()
 
 
 def _registrar_rutas(app: Flask) -> None:
     def raiz() -> Path:
         return app.config["RAIZ"]
+
+    @app.before_request
+    def proteger():
+        """Rechaza peticiones que no vienen de la propia interfaz.
+
+        Sin esto, cualquier página abierta en el navegador mientras corre el servidor
+        podría enviar un formulario a http://127.0.0.1:5000/accion/... (CSRF) y lanzar
+        comandos o sobrescribir archivos; y con DNS rebinding podría además leer
+        /archivo/... La cabecera Host debe ser local, y en los POST el Origin (o el
+        Referer) debe ser el propio servidor. Los clientes que no mandan ninguna de las
+        dos (curl, las pruebas) no son navegadores y no están expuestos a CSRF.
+        """
+        permitidos = app.config["HOSTS_PERMITIDOS"]
+        if permitidos is not None and _nombre_host(request.host) not in permitidos:
+            abort(403)
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            return None
+        origen = request.headers.get("Origin") or request.headers.get("Referer")
+        if origen is not None and urlsplit(origen).netloc.lower() != request.host.lower():
+            abort(403)
+        return None
 
     @app.get("/")
     def index():
@@ -248,6 +306,14 @@ def _registrar_rutas(app: Flask) -> None:
         trabajo = app.config["EJECUTOR"].iniciar(definicion, valores)
         return redirect(url_for("trabajo", trabajo_id=trabajo.id))
 
+    @app.errorhandler(403)
+    def prohibido(_error):
+        return (
+            "Petición rechazada: la interfaz solo acepta acciones enviadas desde su propia "
+            "página (http://127.0.0.1).",
+            403,
+        )
+
     @app.post("/api/comando/<accion_id>")
     def api_comando(accion_id: str):
         """Vista previa: el comando exacto que se ejecutará con lo que hay en el formulario."""
@@ -270,7 +336,8 @@ def _registrar_rutas(app: Flask) -> None:
         actual = app.config["EJECUTOR"].obtener(trabajo_id)
         if actual is None:
             abort(404)
-        return render_template("trabajo.html", trabajo=actual.instantanea(), lineas=actual.desde(0))
+        lineas, total = actual.leer(0)
+        return render_template("trabajo.html", trabajo=actual.instantanea(), lineas=lineas, total=total)
 
     @app.get("/api/trabajo/<trabajo_id>")
     def api_trabajo(trabajo_id: str):
@@ -279,7 +346,9 @@ def _registrar_rutas(app: Flask) -> None:
             return jsonify({"error": "no existe"}), 404
         desde = request.args.get("desde", type=int, default=0)
         datos = actual.instantanea()
-        datos["lineas"] = actual.desde(desde)
+        # Líneas y total salen de la misma lectura: si no, entre una y otra pueden llegar
+        # líneas nuevas y el navegador las pediría dos veces.
+        datos["lineas"], datos["total"] = actual.leer(desde)
         return jsonify(datos)
 
     @app.get("/salidas")
@@ -291,7 +360,7 @@ def _registrar_rutas(app: Flask) -> None:
         db_rel = request.args.get("db") or BD_PREDETERMINADA
         modo = request.args.get("modo", "pendientes")
         clase = request.args.get("clase", "")
-        ruta_db = (raiz() / db_rel).resolve()
+        ruta_db = _bd_dentro(raiz(), db_rel)
         contexto = {
             "db": db_rel,
             "modo": modo,
@@ -301,15 +370,19 @@ def _registrar_rutas(app: Flask) -> None:
             "cuenta": {"total": 0, "revisados": 0, "reales": 0, "pendientes": 0},
             "error": None,
         }
-        if not ruta_db.is_file():
+        if ruta_db is None or not ruta_db.is_file():
             contexto["error"] = (
-                f"No existe la base de datos {db_rel}. Use otra ruta o ejecute antes "
-                "«Procesar un recorrido»."
+                f"No existe la base de datos {db_rel} dentro del proyecto. Use otra ruta o "
+                "ejecute antes «Procesar un recorrido»."
             )
             return render_template("revisar.html", **contexto)
 
-        with BaseDatos(ruta_db) as bd:
-            todas = bd.danos()
+        try:
+            with BaseDatos(ruta_db) as bd:
+                todas = bd.danos()
+        except sqlite3.DatabaseError as error:
+            contexto["error"] = f"{db_rel} no es una base de datos de TapaHuecos ({error})."
+            return render_template("revisar.html", **contexto)
         contexto["clases"] = sorted({f["clase"] for f in todas})
         revisados = sum(1 for f in todas if f["verificado"] is not None)
         reales = sum(1 for f in todas if f["verificado"] == 1)
@@ -333,17 +406,20 @@ def _registrar_rutas(app: Flask) -> None:
     def api_revisar():
         datos = request.get_json(silent=True) or {}
         db_rel = str(datos.get("db") or BD_PREDETERMINADA)
-        ruta_db = (raiz() / db_rel).resolve()
-        if not ruta_db.is_file():
+        ruta_db = _bd_dentro(raiz(), db_rel)
+        if ruta_db is None or not ruta_db.is_file():
             return jsonify({"ok": False, "error": "no existe la base de datos"}), 404
         try:
             dano_id = int(datos["id"])
             real = bool(datos["real"])
         except (KeyError, TypeError, ValueError):
             return jsonify({"ok": False, "error": "faltan id o real"}), 400
-        with BaseDatos(ruta_db) as bd:
-            bd.marcar(dano_id, real)
-            todas = bd.danos()
+        try:
+            with BaseDatos(ruta_db) as bd:
+                bd.marcar(dano_id, real)
+                todas = bd.danos()
+        except sqlite3.DatabaseError as error:
+            return jsonify({"ok": False, "error": f"base de datos inválida: {error}"}), 400
         revisados = sum(1 for f in todas if f["verificado"] is not None)
         return jsonify(
             {
@@ -376,5 +452,12 @@ def main() -> None:
     parser.add_argument("--depurar", action="store_true", help="modo de depuración de Flask")
     args = parser.parse_args()
     app = create_app()
+    if _nombre_host(args.host) not in HOSTS_LOCALES:
+        if args.depurar:
+            parser.error("--depurar solo se permite con --host 127.0.0.1: el depurador de "
+                         "Flask ejecuta código y quedaría expuesto a la red.")
+        print(f"AVISO: escuchando en {args.host}. Cualquiera en la misma red podrá ejecutar "
+              "acciones y leer los archivos del proyecto; la interfaz no tiene contraseña.")
+        app.config["HOSTS_PERMITIDOS"] = None
     print(f"TapaHuecos web en http://{args.host}:{args.puerto}  (Ctrl+C para salir)")
     app.run(host=args.host, port=args.puerto, debug=args.depurar)

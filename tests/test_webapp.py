@@ -261,6 +261,111 @@ def test_revisar_rechaza_id_invalido(app, tmp_path):
     assert respuesta.status_code == 400
 
 
+def test_revisar_rechaza_bd_fuera_del_proyecto(app, tmp_path):
+    ajena = tmp_path.parent / "ajena.db"
+    ajena.write_bytes(b"")
+    respuesta = app.test_client().get(f"/revisar?db={ajena.as_posix()}")
+    assert respuesta.status_code == 200
+    assert "No existe la base de datos" in respuesta.get_data(as_text=True)
+    assert ajena.read_bytes() == b""  # no se le crearon tablas
+
+    marcar = app.test_client().post("/api/revisar", json={"db": "../ajena.db", "id": 1, "real": True})
+    assert marcar.status_code == 404
+
+
+def test_revisar_avisa_si_el_archivo_no_es_sqlite(app, tmp_path):
+    (tmp_path / "config.yaml").write_text("modelo: {}\n", encoding="utf-8")
+    respuesta = app.test_client().get("/revisar?db=config.yaml")
+    assert respuesta.status_code == 200
+    assert "no es una base de datos" in respuesta.get_data(as_text=True)
+
+
+# ------------------------------------------------------------------------- seguridad
+
+
+def _ejecutor_que_registra(registros: list):
+    return SimpleNamespace(
+        iniciar=lambda accion, valores: registros.append(accion.id) or SimpleNamespace(id="x1"),
+        obtener=lambda _id: None,
+        recientes=lambda limite=6: [],
+    )
+
+
+def test_post_desde_otra_pagina_se_rechaza(app):
+    registros: list = []
+    app.config["EJECUTOR"] = _ejecutor_que_registra(registros)
+    respuesta = app.test_client().post(
+        "/accion/exportar",
+        data={"db": "", "csv": "C:/Users/otro/Documents/tesis.docx"},
+        headers={"Origin": "https://malo.example"},
+    )
+    assert respuesta.status_code == 403
+    assert registros == []
+
+
+def test_post_con_referer_ajeno_se_rechaza(app):
+    respuesta = app.test_client().post(
+        "/api/revisar", json={"id": 1, "real": True},
+        headers={"Referer": "http://malo.example/pagina"},
+    )
+    assert respuesta.status_code == 403
+
+
+def test_post_desde_la_propia_interfaz_se_acepta(app, tmp_path):
+    (tmp_path / "v.mp4").write_bytes(b"video")
+    registros: list = []
+    app.config["EJECUTOR"] = _ejecutor_que_registra(registros)
+    respuesta = app.test_client().post(
+        "/accion/verificar", data={"video": "v.mp4"}, headers={"Origin": "http://localhost"}
+    )
+    assert respuesta.status_code == 302
+    assert registros == ["verificar"]
+
+
+def test_host_ajeno_se_rechaza(app):
+    # DNS rebinding: un dominio externo que apunta a 127.0.0.1 llega con su propio Host.
+    assert app.test_client().get("/", headers={"Host": "malo.example:5000"}).status_code == 403
+    assert app.test_client().get("/", headers={"Host": "127.0.0.1:5000"}).status_code == 200
+
+
+def test_host_ajeno_se_acepta_si_se_desactiva_la_comprobacion(app):
+    app.config["HOSTS_PERMITIDOS"] = None
+    assert app.test_client().get("/", headers={"Host": "192.168.1.20:5000"}).status_code == 200
+
+
+def test_procesar_con_video_y_camara_avisa(app, tmp_path):
+    (tmp_path / "v.mp4").write_bytes(b"video")
+    respuesta = app.test_client().post("/accion/procesar", data={"video": "v.mp4", "camara": "0"})
+    assert respuesta.status_code == 400
+    assert "Indique solo uno" in respuesta.get_data(as_text=True)
+
+
+def test_lista_no_admite_opciones_inyectadas(app):
+    respuesta = app.test_client().post(
+        "/accion/preparar-rdd2022",
+        data={"origen": "", "destino": "datos/rdd_yolo", "paises": "Japan --vacias 0.9"},
+    )
+    assert respuesta.status_code == 400
+    assert "no puede contener opciones" in respuesta.get_data(as_text=True)
+
+
+def test_acciones_de_la_cli_coinciden_con_el_parser():
+    """Cada acción de `python -m tapahuecos` debe ser aceptada por el parser real."""
+    from tapahuecos.cli import construir_parser
+
+    ejemplo = {"texto": "x", "numero": "1", "casilla": "1", "lista": "a"}
+    for accion in ACCIONES:
+        if accion.comando[:2] != ("-m", "tapahuecos"):
+            continue
+        omitidos = set(accion.requiere_uno_de[1:])  # solo uno de los excluyentes
+        valores = {c.nombre: ejemplo[c.tipo] for c in accion.campos if c.nombre not in omitidos}
+        if "region" in valores:
+            valores["region"] = "0,0.45,1,1"
+        if "inicio" in valores:
+            valores["inicio"] = "2026-11-08T11:04:01"
+        construir_parser().parse_args(accion.argv(valores)[2:])  # SystemExit si no coincide
+
+
 # ---------------------------------------------------------------------------- archivos
 
 
@@ -304,6 +409,39 @@ def test_ejecutor_captura_salida_y_codigo(tmp_path):
     assert trabajo.estado == "terminado"
     assert trabajo.codigo == 0
     assert any("hola mundo" in linea for linea in trabajo.desde(0))
+
+
+def test_trabajo_sigue_entregando_lineas_despues_del_tope(monkeypatch):
+    import tapahuecos.web.ejecutor as ejecutor_mod
+
+    monkeypatch.setattr(ejecutor_mod, "MAX_LINEAS", 5)
+    accion = SimpleNamespace(id="eco", nombre="Eco")
+    trabajo = ejecutor_mod.Trabajo(accion, ["-c", "pass"])
+    for i in range(8):
+        trabajo.agregar(f"linea {i}")
+
+    lineas, total = trabajo.leer(0)
+    assert total == 8
+    assert lineas == [f"linea {i}" for i in range(3, 8)]  # solo se conservan las últimas 5
+
+    trabajo.agregar("linea 8")
+    nuevas, total = trabajo.leer(8)
+    assert nuevas == ["linea 8"] and total == 9  # antes quedaba congelado en el tope
+    assert trabajo.instantanea()["total"] == 9
+
+
+def test_api_trabajo_devuelve_total_absoluto(app, monkeypatch):
+    import tapahuecos.web.ejecutor as ejecutor_mod
+
+    monkeypatch.setattr(ejecutor_mod, "MAX_LINEAS", 3)
+    trabajo = ejecutor_mod.Trabajo(SimpleNamespace(id="eco", nombre="Eco"), ["-c", "pass"])
+    for i in range(6):
+        trabajo.agregar(str(i))
+    app.config["EJECUTOR"] = SimpleNamespace(obtener=lambda _id: trabajo)
+
+    datos = app.test_client().get(f"/api/trabajo/{trabajo.id}?desde=4").get_json()
+    assert datos["lineas"] == ["4", "5"]
+    assert datos["total"] == 6
 
 
 def test_ejecutor_marca_error(tmp_path):
