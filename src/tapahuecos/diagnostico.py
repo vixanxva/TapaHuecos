@@ -96,6 +96,16 @@ def _comprobar_calibracion(cfg: Config) -> Comprobacion:
     return Comprobacion("Calibración", "aviso", detalle)
 
 
+def _comprobar_mapa(cfg: Config) -> Comprobacion:
+    from tapahuecos.salidas import capa_de_mosaicos
+
+    try:
+        capa_de_mosaicos(cfg.mapa.tiles)
+    except ValueError as error:
+        return Comprobacion("Mapa", "error", str(error))
+    return Comprobacion("Mapa", "ok", f"mosaicos {cfg.mapa.tiles}")
+
+
 def _comprobar_yolo() -> Comprobacion:
     if not _instalado("ultralytics"):
         return Comprobacion(
@@ -196,6 +206,7 @@ def comprobar_entorno(
         _comprobar_region(cfg),
         _comprobar_modelo(cfg),
         _comprobar_calibracion(cfg),
+        _comprobar_mapa(cfg),
     ]
     yolo = _comprobar_yolo()
     comprobaciones.append(yolo)
