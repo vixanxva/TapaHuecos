@@ -444,6 +444,119 @@ def test_api_trabajo_devuelve_total_absoluto(app, monkeypatch):
     assert datos["total"] == 6
 
 
+def _esperar(trabajo, segundos: float = 20) -> None:
+    limite = time.time() + segundos
+    while trabajo.estado == "en_curso" and time.time() < limite:
+        time.sleep(0.05)
+
+
+_CODIGO_LENTO = "import time; print('empiezo', flush=True); time.sleep(60)"
+
+
+def _accion_lenta(accion_id: str = "lenta"):
+    return SimpleNamespace(id=accion_id, nombre="Lenta", argv=lambda _v: ["-c", _CODIGO_LENTO])
+
+
+def test_ejecutor_cancela_un_trabajo(tmp_path):
+    ejecutor = Ejecutor(tmp_path)
+    trabajo = ejecutor.iniciar(_accion_lenta(), {})
+    limite = time.time() + 20
+    while not trabajo.desde(0) and time.time() < limite:  # que el proceso haya arrancado
+        time.sleep(0.05)
+
+    assert ejecutor.cancelar(trabajo.id) is True
+    _esperar(trabajo)
+    assert trabajo.estado == "cancelado"
+    assert time.time() - trabajo.inicio < 30  # no esperó los 60 s del sleep
+    assert ejecutor.cancelar(trabajo.id) is False  # ya terminó
+
+
+def test_ejecutor_no_lanza_dos_veces_la_misma_accion(tmp_path):
+    from tapahuecos.web.ejecutor import TrabajoEnCurso
+
+    ejecutor = Ejecutor(tmp_path)
+    primero = ejecutor.iniciar(_accion_lenta(), {})
+    try:
+        with pytest.raises(TrabajoEnCurso) as error:
+            ejecutor.iniciar(_accion_lenta(), {})
+        assert error.value.trabajo is primero
+        otra = ejecutor.iniciar(_accion_lenta("otra"), {})  # otra acción sí puede correr
+        ejecutor.cancelar(otra.id)
+    finally:
+        ejecutor.cancelar(primero.id)
+        _esperar(primero)
+
+
+def test_ejecutor_no_olvida_trabajos_en_curso(tmp_path):
+    ejecutor = Ejecutor(tmp_path, max_trabajos=2)
+    lento = ejecutor.iniciar(_accion_lenta(), {})
+    try:
+        for i in range(3):
+            rapido = ejecutor.iniciar(
+                SimpleNamespace(id=f"r{i}", nombre="R", argv=lambda _v: ["-c", "pass"]), {}
+            )
+            _esperar(rapido)
+        assert ejecutor.obtener(lento.id) is lento
+    finally:
+        ejecutor.cancelar(lento.id)
+        _esperar(lento)
+
+
+def test_formulario_avisa_si_la_accion_ya_corre(app, tmp_path):
+    from tapahuecos.web.ejecutor import TrabajoEnCurso
+
+    (tmp_path / "v.mp4").write_bytes(b"video")
+
+    class EjecutorOcupado:
+        def iniciar(self, accion, valores):
+            raise TrabajoEnCurso(SimpleNamespace(id="viejo1", accion_nombre=accion.nombre))
+
+    app.config["EJECUTOR"] = EjecutorOcupado()
+    respuesta = app.test_client().post("/accion/verificar", data={"video": "v.mp4"})
+    assert respuesta.status_code == 409
+    cuerpo = respuesta.get_data(as_text=True)
+    assert "en curso" in cuerpo and "/trabajo/viejo1" in cuerpo
+
+
+def test_api_cancelar(app):
+    estados = {"t1": True, "t2": False}
+    app.config["EJECUTOR"] = SimpleNamespace(
+        obtener=lambda i: i if i in estados else None,
+        cancelar=lambda i: estados[i],
+    )
+    cliente = app.test_client()
+    assert cliente.post("/api/trabajo/t1/cancelar").get_json() == {"ok": True}
+    assert cliente.post("/api/trabajo/t2/cancelar").status_code == 409
+    assert cliente.post("/api/trabajo/nada/cancelar").status_code == 404
+    assert cliente.post("/api/trabajo/t1/cancelar",
+                        headers={"Origin": "https://malo.example"}).status_code == 403
+
+
+def test_lista_con_punto_y_coma_admite_rutas_con_espacios():
+    from tapahuecos.web.acciones import partes_de_lista
+
+    assert partes_de_lista("C:/Users/Juan Pérez/rdd_yolo; datos/monteria") == [
+        "C:/Users/Juan Pérez/rdd_yolo", "datos/monteria"
+    ]
+    assert partes_de_lista("Japan, India Czech") == ["Japan", "India", "Czech"]
+
+
+def test_vista_previa_pone_comillas_a_las_rutas_con_espacios():
+    from tapahuecos.web.acciones import mostrar_comando
+
+    texto = mostrar_comando(["python", "-m", "tapahuecos", "verificar", "--video", "mis videos/v.mp4"])
+    assert '"mis videos/v.mp4"' in texto or "'mis videos/v.mp4'" in texto
+
+
+def test_avisa_si_no_es_la_carpeta_del_proyecto(tmp_path):
+    from tapahuecos.web import faltantes_del_proyecto
+
+    assert faltantes_del_proyecto(tmp_path) == ["scripts/", "config.yaml"]
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "config.yaml").write_text("", encoding="utf-8")
+    assert faltantes_del_proyecto(tmp_path) == []
+
+
 def test_ejecutor_marca_error(tmp_path):
     accion = SimpleNamespace(id="falla", nombre="Falla", argv=lambda _v: ["-c", "raise SystemExit(3)"])
     ejecutor = Ejecutor(tmp_path)

@@ -11,7 +11,10 @@ campo con lo que ya existe en el proyecto (el primer video, el GPX que coincide,
 
 from __future__ import annotations
 
+import os
 import re
+import shlex
+import subprocess
 from dataclasses import dataclass
 
 # Tipos de campo: texto, numero, casilla (--flag) y lista (varios valores separados).
@@ -71,8 +74,21 @@ class Accion:
 
 
 def partes_de_lista(valor: str) -> list[str]:
-    """Los valores de un campo de tipo lista, separados por comas o espacios."""
-    return [parte for parte in re.split(r"[,\s]+", valor.strip()) if parte]
+    """Los valores de un campo de tipo lista.
+
+    Normalmente van separados por comas o espacios. Si el texto trae «;» (o saltos de
+    línea), se separa solo por ahí, para admitir rutas con espacios como
+    `C:/Users/Juan Pérez/rdd_yolo; datos/monteria`.
+    """
+    separador = r"[;\n]+" if re.search(r"[;\n]", valor) else r"[,\s]+"
+    return [parte.strip() for parte in re.split(separador, valor.strip()) if parte.strip()]
+
+
+def mostrar_comando(argv: list[str]) -> str:
+    """El comando como se escribiría en la consola, con comillas donde hagan falta."""
+    if os.name == "nt":
+        return subprocess.list2cmdline(argv)
+    return shlex.join(argv)
 
 
 RECORRIDO = Campo("recorrido", "Recorrido", tipo="numero",
@@ -286,7 +302,8 @@ ACCIONES: tuple[Accion, ...] = (
         grupo="Datos y modelo",
         comando=("scripts/combinar_datasets.py",),
         campos=(Campo("entradas", "Datasets de entrada", tipo="lista", requerido=True,
-                      ayuda="Rutas separadas por espacios",
+                      ayuda="Rutas separadas por espacios; si alguna tiene espacios, "
+                            "sepárelas con «;»",
                       marcador="datos/rdd_yolo datos/monteria"),
                 Campo("destino", "Carpeta de salida", requerido=True, valor="datos/combinado"),
                 Campo("repetir", "Repetir el train", tipo="lista",
