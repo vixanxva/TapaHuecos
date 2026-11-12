@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block titulo %}{{ accion.nombre }} · TapaHuecos{% endblock %}
+{% block cuerpo %}
+<p class="migas"><a href="{{ url_for('index') }}">Acciones</a> / {{ accion.grupo }}</p>
+<h1>{{ accion.nombre }}</h1>
+<p class="intro">{{ accion.descripcion }}</p>
+{% if accion.nota %}<p class="aviso">{{ accion.nota }}</p>{% endif %}
+
+{% if errores %}
+<div class="aviso error">
+  <b>No se ejecutó nada:</b>
+  <ul>{% for error in errores %}<li>{{ error }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<form method="post" class="formulario" data-accion="{{ accion.id }}">
+  <p class="ayuda">
+    Los campos que ya vienen rellenos <b>se envían tal cual</b>. Lo que aparece como
+    «Ejemplo: …» es solo una pista y no se envía.
+  </p>
+
+  {% for campo in accion.campos %}
+  {% set sugeridas = sugerencias.get(campo.nombre, []) %}
+  {% set valor = valores.get(campo.nombre, campo.valor) %}
+  <div class="campo">
+    {% if campo.tipo == 'casilla' %}
+    <label class="casilla">
+      <input type="checkbox" name="{{ campo.nombre }}" value="1" {% if valor %}checked{% endif %}>
+      <span>{{ campo.etiqueta }}</span>
+    </label>
+    {% else %}
+    <label for="c-{{ campo.nombre }}">
+      {{ campo.etiqueta }}{% if campo.requerido %} <span class="req">*</span>{% endif %}
+    </label>
+    <input id="c-{{ campo.nombre }}" name="{{ campo.nombre }}"
+           type="{{ 'number' if campo.tipo == 'numero' else 'text' }}"
+           value="{{ valor }}"
+           {% if sugeridas %}list="l-{{ campo.nombre }}"{% endif %}>
+    {% if sugeridas %}
+    <datalist id="l-{{ campo.nombre }}">
+      {% for opcion in sugeridas %}<option value="{{ opcion }}"></option>{% endfor %}
+    </datalist>
+    {% endif %}
+    {% if campo.nombre == 'gpx' and accion.campo('video') %}
+    <button type="button" class="secundario" data-buscar-gpx>Buscar el GPX del video</button>
+    {% endif %}
+    {% endif %}
+    {% if campo.ayuda %}<p class="ayuda">{{ campo.ayuda }}</p>{% endif %}
+    {% if campo.marcador %}<p class="ayuda">Ejemplo: <code>{{ campo.marcador }}</code></p>{% endif %}
+  </div>
+  {% endfor %}
+
+  <div class="vista-previa">
+    <span>Comando a ejecutar</span>
+    <code id="vista-previa">…</code>
+  </div>
+
+  <button type="submit" class="principal">Ejecutar</button>
+</form>
+<script src="{{ url_for('static', filename='accion.js') }}"></script>
+{% endblock %}

@@ -102,12 +102,20 @@ class ConfigRegistro:
 
 
 @dataclass
+class ConfigMapa:
+    # Proveedor de mosaicos del mapa HTML. OpenStreetMap bloquea sus servidores
+    # voluntarios por la política de uso y CARTO ahora exige clave; Esri no pide clave.
+    tiles: str = "Esri.WorldStreetMap"
+
+
+@dataclass
 class Config:
     modelo: ConfigModelo = field(default_factory=ConfigModelo)
     video: ConfigVideo = field(default_factory=ConfigVideo)
     segmentacion: ConfigSegmentacion = field(default_factory=ConfigSegmentacion)
     calibracion: ConfigCalibracion = field(default_factory=ConfigCalibracion)
     registro: ConfigRegistro = field(default_factory=ConfigRegistro)
+    mapa: ConfigMapa = field(default_factory=ConfigMapa)
 
 
 def validar_region(region: list[float] | None) -> None:
@@ -147,4 +155,5 @@ def cargar_config(ruta: str | Path | None = None) -> Config:
         segmentacion=_seccion(ConfigSegmentacion, datos, "segmentacion"),
         calibracion=_seccion(ConfigCalibracion, datos, "calibracion"),
         registro=_seccion(ConfigRegistro, datos, "registro"),
+        mapa=_seccion(ConfigMapa, datos, "mapa"),
     )

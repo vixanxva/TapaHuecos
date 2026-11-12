@@ -22,7 +22,7 @@ Es una herramienta de consola que funciona de principio a fin, y eso es exactame
 |---|---|---|
 | **Profundidad del hueco** | Con una sola cámara no se puede medir de forma confiable. | La diapositiva 7 la menciona: corregirla o presentarla como trabajo futuro. |
 | **Tiempo real en el vehículo** | El sistema procesa video ya grabado. El modo cámara en vivo funciona, pero a pocos fotogramas por segundo en un portátil sin GPU. | Presentarlo como procesamiento posterior al recorrido. |
-| **Interfaz gráfica, servidor web o app móvil de procesamiento** | El producto es una herramienta de consola. La app Android compañera solo graba el GPX; no graba video ni muestra resultados. | — |
+| **Interfaz gráfica de escritorio, servidor web multiusuario o app móvil de procesamiento** | El producto es una herramienta de consola. Hay una interfaz web local (opcional, `tapahuecos-web`) para ejecutar los comandos desde el navegador, y una app Android que solo graba el GPX; ninguna graba video ni muestra resultados en el celular. | — |
 | **Envío automático de reportes a las autoridades** | Fuera del tiempo del proyecto. | Trabajo futuro. |
 
 ## 3. Flujo completo
@@ -63,6 +63,7 @@ Cada etapa es un módulo de `src/tapahuecos/` (ver la sección 7) y `pipeline.py
 | **SQLite** (módulo `sqlite3`) | Base de datos en un solo archivo. Viene con Python; no hay que instalar nada. |
 | **pandas** | Exportar el registro a CSV y analizar resultados. |
 | **Folium** | Generar el mapa HTML interactivo. |
+| **Flask** | Interfaz web local (opcional, `tapahuecos-web`) para ejecutar los comandos desde el navegador. |
 | **Google Colab** | GPU gratuita (Tesla T4) para entrenar. |
 | **Roboflow** (plan gratuito) | Etiquetar las fotos propias y exportarlas en formato YOLO. |
 | **Git + GitHub** | Repositorio, ramas, Pull Requests, issues, tablero de Projects e integración continua. |

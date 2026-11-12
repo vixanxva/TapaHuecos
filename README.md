@@ -110,6 +110,32 @@ Todos los resultados quedan en `salidas/` (o en la carpeta de `--salida`): `*_an
 
 Los parámetros (umbral de confianza, salto de fotogramas, zona horaria, segmentación, calibración) están en [config.yaml](config.yaml).
 
+## Interfaz web (opcional)
+
+Para no depender de la consola durante la presentación, hay una interfaz web local que
+lista todas las acciones del proyecto y las ejecuta en el navegador, mostrando la salida
+en vivo. No es un servidor multiusuario: corre en `127.0.0.1`, en tu equipo, y por dentro
+usa los mismos comandos de `tapahuecos` y los mismos scripts.
+
+```bash
+pip install -e ".[web]"
+tapahuecos-web            # o: python -m tapahuecos.web
+```
+
+Abrir <http://127.0.0.1:5000>. Desde ahí se puede:
+
+- Ejecutar `verificar`, `procesar`, `mapa`, `fusionar`, `exportar` y `resumen`.
+- Ver las métricas de campo y el error de área (`scripts/evaluar.py`).
+- Calibrar la cámara, generar la demo sintética, preparar RDD2022, combinar datasets y
+  entrenar.
+- **Revisar los daños sin ventanas**: una galería marca cada recorte como real o falso
+  positivo; reemplaza a `tapahuecos revisar`, que necesita ventana y no funciona en Colab.
+- Abrir el mapa, los videos anotados y los recortes de cada carpeta de `salidas/`.
+
+Las acciones se declaran en `src/tapahuecos/web/acciones.py`; agregar una nueva es una
+entrada más en esa lista. Tutorial paso a paso (incluidas las funciones de datos y modelo
+y qué campos traen valor y cuáles solo un ejemplo): [docs/tutorial_web.md](docs/tutorial_web.md).
+
 ## App Android para grabar GPX
 
 La app de [`android/`](android/README.md) es independiente del pipeline y sirve para
@@ -180,7 +206,8 @@ TapaHuecos/
 │   ├── pipeline.py             orquesta las 6 etapas
 │   ├── evaluacion.py           métricas de campo, error de área y de posición
 │   ├── clases.py               D00, D10, D20, D40
-│   └── cli.py                  comandos de consola
+│   ├── cli.py                  comandos de consola
+│   └── web/                    interfaz web local (opcional): acciones, plantillas y CSS
 ├── scripts/                    preparar datos, entrenar, evaluar, calibrar
 ├── tests/                      pruebas (no requieren YOLO ni GPU)
 ├── android/                    app compañera para grabar GPX en segundo plano
@@ -193,6 +220,7 @@ TapaHuecos/
 
 - [Documento técnico](docs/documento_tecnico.md): alcance, arquitectura, cada etapa, métricas y riesgos.
 - [Guía de captura](docs/guia_captura.md): cómo grabar el video y el GPX.
+- [Tutorial de la interfaz web](docs/tutorial_web.md): usar el proyecto desde el navegador.
 - [App Android](android/README.md): cómo compilar, instalar y usar la grabadora de GPX.
 - [Guía de etiquetado](docs/guia_etiquetado.md): criterios para etiquetar en Roboflow.
 - [Backlog](docs/backlog.md): issues e hitos del proyecto.
@@ -203,7 +231,7 @@ TapaHuecos/
 
 **Hace:** detectar cuatro tipos de daño en imágenes y video, resaltarlos y estimar su área, ubicarlos por GPS, registrarlos y mostrarlos en un mapa, y reportar métricas con videos reales.
 
-**No hace:** medir la profundidad de los huecos (no es confiable con una sola cámara), procesar en tiempo real dentro del vehículo (el modo cámara funciona, pero a pocos fps en un portátil sin GPU), ni ofrecer interfaz gráfica, servidor web o envío automático de reportes. La app Android compañera solo graba el GPX: no graba video ni detecta daños en el teléfono. Ver la sección 2 del [documento técnico](docs/documento_tecnico.md).
+**No hace:** medir la profundidad de los huecos (no es confiable con una sola cámara), procesar en tiempo real dentro del vehículo (el modo cámara funciona, pero a pocos fps en un portátil sin GPU), ni ofrecer un servidor web multiusuario o envío automático de reportes. Hay una **interfaz web local** para ejecutar los comandos desde el navegador y una **app Android** que solo graba el GPX: ninguna graba video ni detecta daños en el teléfono. Ver la sección 2 del [documento técnico](docs/documento_tecnico.md).
 
 ## Licencia
 

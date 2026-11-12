@@ -18,6 +18,12 @@ log = logging.getLogger(__name__)
 MONTERIA = (8.7479, -75.8814)
 _FUENTE = cv2.FONT_HERSHEY_SIMPLEX
 
+# Los mosaicos por defecto. OpenStreetMap bloquea sus servidores voluntarios cuando la
+# página se abre muchas veces ("403 Access blocked ... tile usage policy") y el mapa de
+# CARTO ahora exige clave de API, así que se usa el mapa de calles de Esri, que no pide
+# clave. Cambiable en config.yaml (mapa.tiles): cualquier nombre de folium/xYZ o una URL.
+TILES_PREDETERMINADOS = "Esri.WorldStreetMap"
+
 
 def _escala(imagen: np.ndarray) -> float:
     """Tamaño de letra proporcional al fotograma: 0.5 a 640 px, 1.2 a 1920 px."""
@@ -102,8 +108,16 @@ def _popup(fila: dict, ruta_imagen: str) -> str:
     )
 
 
-def generar_mapa(filas: list[dict], ruta_html: Path, carpeta_base: Path) -> Path:
-    """Mapa interactivo con una capa por tipo de daño. `carpeta_base` es donde está la BD."""
+def generar_mapa(
+    filas: list[dict],
+    ruta_html: Path,
+    carpeta_base: Path,
+    tiles: str = TILES_PREDETERMINADOS,
+) -> Path:
+    """Mapa interactivo con una capa por tipo de daño. `carpeta_base` es donde está la BD.
+
+    `tiles` es el nombre o la URL del proveedor de mosaicos (por defecto, el de CARTO).
+    """
     import folium
 
     ruta_html = Path(ruta_html)
@@ -112,7 +126,7 @@ def generar_mapa(filas: list[dict], ruta_html: Path, carpeta_base: Path) -> Path
     if len(con_gps) < len(filas):
         log.warning("%d daños sin coordenada no aparecen en el mapa.", len(filas) - len(con_gps))
 
-    mapa = folium.Map(location=MONTERIA, zoom_start=14, tiles="OpenStreetMap")
+    mapa = folium.Map(location=MONTERIA, zoom_start=14, tiles=tiles)
     capas: dict[str, folium.FeatureGroup] = {}
     for fila in con_gps:
         clase = clase_por_codigo(fila["clase"])

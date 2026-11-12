@@ -220,7 +220,7 @@ def procesar(
         # cada daño una vez aunque se haya registrado en varios recorridos.
         fusionar_bd(bd, cfg.registro.radio_fusion_m)
         todas = bd.danos()
-        mapa = generar_mapa(unicos(todas), carpeta_salida / "mapa.html", carpeta_salida)
+        mapa = generar_mapa(unicos(todas), carpeta_salida / "mapa.html", carpeta_salida, cfg.mapa.tiles)
         csv = exportar_csv(todas, carpeta_salida / "danos.csv")
 
     return Resultado(
