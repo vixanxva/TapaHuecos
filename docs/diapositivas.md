@@ -51,7 +51,7 @@ De **un video y su GPX** salen cuatro cosas:
 3. **Base de datos** (SQLite y CSV) con tipo, tamaño aproximado y coordenada.
 4. **Mapa interactivo** con un punto por daño y su recorte.
 
-*Nota:* aquí se muestra una captura real del mapa (`Salidas/Prueba_region/mapa.html`) y un
+*Nota:* aquí se muestra una captura real del mapa (`salidas/campana_20261108/mapa.html`) y un
 fotograma del video anotado.
 
 ---
@@ -141,7 +141,7 @@ oculto.
 
 - **Video anotado:** un recorrido real de Montería con los daños marcados.
 - **Mapa:** 48 puntos con su recorte, capa por tipo de daño.
-- **En vivo (si el tiempo lo permite):** `tapahuecos-web` → *Procesar un recorrido*.
+- **En vivo:** `python scripts/presentar.py vivo` (video + GPX → detección → mapa, en un minuto).
 
 *Nota:* dejar preparado el video y el mapa abiertos en pestañas aparte, por si la demo en
 vivo falla. Ver el plan B en [presentacion.md](presentacion.md).
