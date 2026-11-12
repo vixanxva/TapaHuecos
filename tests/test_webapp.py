@@ -121,7 +121,9 @@ def test_ejecutar_redirige_al_trabajo(app, tmp_path):
     respuesta = app.test_client().post("/accion/verificar", data={"video": "v.mp4", "gpx": "", "pesos": ""})
     assert respuesta.status_code == 302
     assert respuesta.headers["Location"].endswith("/trabajo/abc123")
-    assert registros == [("verificar", {"video": "v.mp4", "gpx": "", "pesos": ""})]
+    assert registros == [
+        ("verificar", {"video": "v.mp4", "gpx": "", "pesos": "", "inicio": "", "region": ""})
+    ]
 
 
 def test_procesar_sin_video_ni_camara_avisa(app):

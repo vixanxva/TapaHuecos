@@ -91,6 +91,58 @@ def test_verificar_en_consola(tmp_path, sin_yolo, capsys):
     assert "Todo listo" in texto
 
 
+def _config_valida(tmp_path):
+    config = tmp_path / "config.yaml"
+    pesos = tmp_path / "best.pt"
+    pesos.write_bytes(b"pesos de prueba")
+    config.write_text(
+        f"modelo:\n  pesos: {pesos}\n"
+        "calibracion:\n  homografia: null\n  metros_por_pixel: 0.005\n",
+        encoding="utf-8",
+    )
+    return config
+
+
+def test_verificar_usa_el_inicio_indicado(tmp_path, sin_yolo, capsys, datos_prueba):
+    config = _config_valida(tmp_path)
+    codigo = main(["verificar", "--config", str(config), "--video", str(datos_prueba["video"]),
+                   "--inicio", "2031-01-02T03:04:05"])
+    assert codigo == 0
+    assert "2031-01-02" in capsys.readouterr().out  # no la fecha del archivo
+
+
+def test_verificar_rechaza_inicio_y_region_invalidos(tmp_path, sin_yolo):
+    config = _config_valida(tmp_path)
+    assert main(["verificar", "--config", str(config), "--inicio", "ayer"]) == 1
+    assert main(["verificar", "--config", str(config), "--region", "0,0,2,1"]) == 1
+
+
+def test_inicio_invalido_en_config_se_informa_sin_excepcion(cfg, sin_yolo, datos_prueba):
+    cfg.video.inicio_grabacion = "no es una fecha"
+    comprobaciones = diagnostico.comprobar_entorno(cfg, None, datos_prueba["video"])
+    video = next(c for c in comprobaciones if c.nombre == "Video")
+    assert video.estado == "error"
+    assert "hora de inicio" in video.detalle
+
+
+def test_modelo_que_ultralytics_descarga_es_aviso(tmp_path, monkeypatch, sin_yolo):
+    monkeypatch.chdir(tmp_path)  # que no haya un yolov8n.pt ya descargado en la carpeta
+    cfg = Config()
+    cfg.modelo.pesos = "yolov8n.pt"
+    modelo = diagnostico._comprobar_modelo(cfg)
+    assert modelo.estado == "aviso"
+    assert "descargará" in modelo.detalle
+
+
+def test_sugiere_best_rdd_junto_a_best(tmp_path):
+    (tmp_path / "best_rdd.pt").write_bytes(b"fase 1")
+    cfg = Config()
+    cfg.modelo.pesos = str(tmp_path / "best.pt")
+    modelo = diagnostico._comprobar_modelo(cfg)
+    assert modelo.estado == "error"
+    assert "best_rdd.pt" in modelo.detalle
+
+
 def test_verificar_falla_si_falta_el_modelo(tmp_path, sin_yolo, capsys):
     config = tmp_path / "config.yaml"
     config.write_text(

@@ -208,7 +208,8 @@ Otros comandos: `verificar`, `mapa`, `fusionar`, `exportar`, `resumen`, `revisar
 `tapahuecos mapa --db D [--config C] [--salida S] [--recorrido N] [--todos]` toma los
 mosaicos de `C` (por defecto `config.yaml`, si existe).
 
-`tapahuecos verificar [--config C] [--pesos P] [--video V] [--gpx G]` no carga YOLO:
+`tapahuecos verificar [--config C] [--pesos P] [--video V] [--gpx G] [--inicio ISO] [--region X1,Y1,X2,Y2]` no carga YOLO
+(`--inicio` y `--region` se interpretan igual que en `procesar`):
 comprueba dependencias, configuración, región, pesos, calibración, mosaicos del mapa y, si se indican,
 el video y el GPX (incluido el solape temporal). Devuelve `1` si alguna comprobación
 es un error; los avisos no impiden procesar.
