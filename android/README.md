@@ -9,8 +9,9 @@ el archivo que después se pasa a `tapahuecos procesar`.
 - Graba **un punto por segundo** con `LocationManager` y `GPS_PROVIDER`.
 - Funciona como **servicio en primer plano** con notificación persistente: sigue
   grabando con la pantalla apagada o la app en segundo plano.
-- Descarta puntos sin coordenada o con precisión peor que 100 m y calcula distancia y
-  velocidad medias en pantalla.
+- Usa **solo GPS**: no mezcla la ubicación por red, que tiene decenas de metros de error.
+- Descarta puntos sin coordenada o con precisión peor que 100 m y muestra en pantalla
+  la duración, los puntos, la distancia y la precisión.
 - Escribe el GPX de forma **incremental**: después de cada punto el XML ya está
   cerrado y es válido, aunque Android mate el proceso o se agote la batería.
 - Guarda una copia privada y exporta otra a `Documents/TapaHuecos` (en Android 10 o

@@ -30,9 +30,10 @@ class GpxTrackWriter private constructor(
         if (closed || !isValid(point)) return false
 
         val pointBytes = pointToXml(point).toByteArray(StandardCharsets.UTF_8)
+        // Punto y cierre en una sola escritura: con dos, si Android mataba el proceso
+        // entre ambas, el archivo quedaba sin </gpx> y no se podía leer ningún punto.
         randomAccessFile.seek(tailOffset)
-        randomAccessFile.write(pointBytes)
-        randomAccessFile.write(FOOTER_BYTES)
+        randomAccessFile.write(pointBytes + FOOTER_BYTES)
         tailOffset += pointBytes.size
         randomAccessFile.setLength(tailOffset + FOOTER_BYTES.size)
         randomAccessFile.fd.sync()

@@ -184,9 +184,9 @@ class MainActivity : Activity() {
         if (isBusy()) return
 
         val locationManager = getSystemService(LocationManager::class.java)
+        // El servicio graba solo con GPS; la ubicación por red no sirve para ubicar daños.
         val enabled = runCatching {
-            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
         }.getOrDefault(false)
 
         if (!enabled) {

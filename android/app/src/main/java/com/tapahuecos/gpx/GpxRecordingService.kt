@@ -125,11 +125,9 @@ class GpxRecordingService : Service(), LocationListener {
             return
         }
 
-        val providers = locationManager.allProviders
-        val gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        val networkEnabled = providers.contains(LocationManager.NETWORK_PROVIDER) &&
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        if (!gpsEnabled && !networkEnabled) {
+        // Solo GPS: la ubicación por red tiene decenas de metros de error y su hora sale
+        // del reloj del sistema, no del GNSS; mezclarla ensucia la posición de cada daño.
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             failStart(getString(R.string.error_location_disabled))
             return
         }
@@ -183,27 +181,13 @@ class GpxRecordingService : Service(), LocationListener {
             throw SecurityException("Falta el permiso de ubicación precisa.")
         }
 
-        val providers = locationManager.allProviders
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                LOCATION_INTERVAL_MS,
-                0f,
-                this,
-                Looper.getMainLooper(),
-            )
-        }
-        if (providers.contains(LocationManager.NETWORK_PROVIDER) &&
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.NETWORK_PROVIDER,
-                LOCATION_INTERVAL_MS,
-                0f,
-                this,
-                Looper.getMainLooper(),
-            )
-        }
+        locationManager.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER,
+            LOCATION_INTERVAL_MS,
+            0f,
+            this,
+            Looper.getMainLooper(),
+        )
     }
 
     override fun onLocationChanged(location: Location) {
