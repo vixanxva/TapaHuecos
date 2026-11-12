@@ -5,6 +5,7 @@
 <h1>{{ trabajo.accion }}</h1>
 <p class="comando"><code>{{ trabajo.comando }}</code></p>
 <p class="estado en-curso" id="estado" data-id="{{ trabajo.id }}">En curso…</p>
+<p><button type="button" id="cancelar"{% if trabajo.estado != 'en_curso' %} hidden{% endif %}>Cancelar</button></p>
 
 <pre class="salida" id="salida" data-desde="{{ total }}">{% for linea in lineas %}{{ linea }}
 {% endfor %}</pre>

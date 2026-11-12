@@ -34,7 +34,7 @@ from tapahuecos.entrada import resolver_inicio
 from tapahuecos.gps import Recorrido
 from tapahuecos.registro import BaseDatos
 from tapahuecos.web import acciones as cat
-from tapahuecos.web.ejecutor import Ejecutor
+from tapahuecos.web.ejecutor import Ejecutor, TrabajoEnCurso
 
 BD_PREDETERMINADA = "salidas/danos.db"
 
@@ -303,8 +303,30 @@ def _registrar_rutas(app: Flask) -> None:
                 ),
                 400,
             )
-        trabajo = app.config["EJECUTOR"].iniciar(definicion, valores)
+        try:
+            trabajo = app.config["EJECUTOR"].iniciar(definicion, valores)
+        except TrabajoEnCurso as en_curso:
+            enlace = url_for("trabajo", trabajo_id=en_curso.trabajo.id)
+            return (
+                render_template(
+                    "accion.html",
+                    accion=definicion,
+                    sugerencias=_sugerencias(raiz()),
+                    valores=valores,
+                    errores=[f"Ya hay un «{definicion.nombre}» en curso ({enlace}). "
+                             "Espere a que termine o cancélelo antes de lanzar otro."],
+                ),
+                409,
+            )
         return redirect(url_for("trabajo", trabajo_id=trabajo.id))
+
+    @app.post("/api/trabajo/<trabajo_id>/cancelar")
+    def api_cancelar(trabajo_id: str):
+        if app.config["EJECUTOR"].obtener(trabajo_id) is None:
+            return jsonify({"ok": False, "error": "no existe"}), 404
+        if not app.config["EJECUTOR"].cancelar(trabajo_id):
+            return jsonify({"ok": False, "error": "el trabajo ya terminó"}), 409
+        return jsonify({"ok": True})
 
     @app.errorhandler(403)
     def prohibido(_error):
@@ -322,7 +344,7 @@ def _registrar_rutas(app: Flask) -> None:
             return jsonify({"error": "no existe"}), 404
         datos = request.get_json(silent=True) or {}
         valores = {campo.nombre: str(datos.get(campo.nombre, "")) for campo in definicion.campos}
-        return jsonify({"comando": "python " + " ".join(definicion.argv(valores))})
+        return jsonify({"comando": cat.mostrar_comando(["python", *definicion.argv(valores)])})
 
     @app.get("/api/gpx")
     def api_gpx():
@@ -440,6 +462,11 @@ def _registrar_rutas(app: Flask) -> None:
         return send_from_directory(destino.parent, destino.name)
 
 
+def faltantes_del_proyecto(raiz: Path) -> list[str]:
+    """Lo que debería haber en la carpeta del proyecto y no está (los scripts, la config)."""
+    return [nombre for nombre in ("scripts/", "config.yaml") if not (raiz / nombre).exists()]
+
+
 def main() -> None:
     """Levanta el servidor local. Pensado para correr desde la carpeta del proyecto."""
     import argparse
@@ -452,6 +479,9 @@ def main() -> None:
     parser.add_argument("--depurar", action="store_true", help="modo de depuración de Flask")
     args = parser.parse_args()
     app = create_app()
+    for falta in faltantes_del_proyecto(app.config["RAIZ"]):
+        print(f"AVISO: no se encontró {falta} en {app.config['RAIZ']}. Ejecute tapahuecos-web "
+              "desde la carpeta del proyecto o las acciones que lo usan fallarán.")
     if _nombre_host(args.host) not in HOSTS_LOCALES:
         if args.depurar:
             parser.error("--depurar solo se permite con --host 127.0.0.1: el depurador de "

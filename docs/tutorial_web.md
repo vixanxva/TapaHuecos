@@ -11,7 +11,19 @@ tapahuecos-web                 # o: python -m tapahuecos.web
 ```
 
 Abrir <http://127.0.0.1:5000>. Debe ejecutarse desde la carpeta del proyecto (donde está
-`config.yaml`). `--puerto 5001` cambia el puerto y `--host` la interfaz de red.
+`config.yaml`); si no, avisa al arrancar. `--puerto 5001` cambia el puerto.
+
+**Seguridad.** Solo acepta acciones enviadas desde su propia página: otra pestaña o sitio
+no puede lanzar comandos aunque el servidor esté abierto. `--host 0.0.0.0` la abre a la
+red local, avisa de que no tiene contraseña (cualquiera en el mismo wifi podría usarla) y
+no permite `--depurar`. Para la sustentación basta con `127.0.0.1`.
+
+**Trabajos.** Cada acción corre en segundo plano; la página del trabajo tiene un botón
+**Cancelar**. No se puede lanzar la misma acción dos veces a la vez (dos «Procesar»
+escribirían en la misma base de datos): el formulario avisa y enlaza al trabajo en curso.
+
+**Listas con espacios.** Los campos de varios valores (Países, Datasets de entrada) se
+separan por espacios o comas; si una ruta tiene espacios, sepárelas con `;`.
 
 ## 2. Cómo se lee un formulario (regla de oro)
 

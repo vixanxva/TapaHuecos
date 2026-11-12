@@ -136,6 +136,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .estado.en-curso { color: var(--acento); }
 .estado.terminado { color: var(--ok); }
 .estado.error { color: var(--error); }
+.estado.cancelado { color: var(--error); }
 
 .salida {
   background: #12131a;

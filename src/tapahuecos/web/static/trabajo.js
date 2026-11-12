@@ -5,8 +5,23 @@
   if (!pre || !estado) return;
 
   const id = estado.dataset.id;
+  const cancelar = document.getElementById("cancelar");
   let desde = parseInt(pre.dataset.desde || "0", 10);
   let terminado = false;
+
+  if (cancelar) {
+    cancelar.addEventListener("click", async function () {
+      if (!window.confirm("¿Detener este trabajo? Lo que ya escribió se conserva.")) return;
+      cancelar.disabled = true;
+      cancelar.textContent = "Cancelando…";
+      try {
+        await fetch("/api/trabajo/" + id + "/cancelar", { method: "POST" });
+      } catch (error) {
+        cancelar.disabled = false;
+        cancelar.textContent = "Cancelar";
+      }
+    });
+  }
 
   function pintar(datos) {
     if (datos.lineas && datos.lineas.length) {
@@ -19,10 +34,13 @@
       estado.className = "estado en-curso";
     } else {
       terminado = true;
+      if (cancelar) cancelar.hidden = true;
       const fin =
         datos.estado === "terminado"
           ? "Terminado"
-          : "Terminó con error (código " + datos.codigo + ")";
+          : datos.estado === "cancelado"
+            ? "Cancelado"
+            : "Terminó con error (código " + datos.codigo + ")";
       estado.textContent = fin + " en " + datos.segundos + " s";
       estado.className = "estado " + datos.estado;
     }
