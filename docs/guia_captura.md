@@ -3,7 +3,10 @@
 ## Equipo
 
 - Celular o cámara de acción para el video, en un soporte firme (en el parabrisas, o en el manubrio si es moto).
-- Celular con una app que grabe GPX; en Android, por ejemplo, **GPS Logger** (BasicAirData o Mendhak). Puede ser el mismo celular que graba el video, si la app sigue funcionando en segundo plano.
+- Celular Android con la app **TapaHuecos GPX** de este repositorio
+  ([`android/`](../android/README.md)). Graba en segundo plano con la pantalla apagada
+  y guarda el GPX en `Documents/TapaHuecos`. Como alternativa sirve **GPS Logger**
+  (BasicAirData o Mendhak). Puede ser el mismo celular que graba el video.
 
 ## Configuración
 

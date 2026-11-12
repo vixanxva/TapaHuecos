@@ -2,7 +2,7 @@
 # src/tapahuecos/config.py; aquí solo hace falta cambiar lo que se quiera ajustar.
 
 modelo:
-  pesos: modelos/best.pt        # resultado de scripts/entrenar.py
+  pesos: modelos/best_rdd.pt    # fase 1; use modelos/best.pt cuando exista (fase 2)
   confianza: 0.35               # umbral mínimo de confianza de YOLO
   iou: 0.5                      # umbral de supresión de no máximos
   tamano_imagen: 640            # debe coincidir con el usado al entrenar
@@ -81,3 +81,10 @@ registro:
   max_ausencia: 30              # fotogramas sin ver un daño antes de darlo por terminado
   tolerancia_gps_s: 5.0         # margen permitido fuera del rango de tiempo del GPX
   radio_fusion_m: 8.0           # daños de la misma clase a menos de esto, en recorridos distintos, son el mismo
+
+mapa:
+  # Proveedor de mosaicos del mapa HTML. OpenStreetMap bloquea sus servidores voluntarios
+  # por la política de uso (403 "tile usage policy") y CARTO ahora exige clave de API.
+  # Esri no pide clave. Otras opciones: "Esri.WorldImagery" (satélite), "OpenTopoMap",
+  # "OpenStreetMap", o una URL propia con {z}/{x}/{y}.
+  tiles: "Esri.WorldStreetMap"

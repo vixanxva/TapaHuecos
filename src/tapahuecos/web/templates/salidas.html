@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Salidas · TapaHuecos{% endblock %}
+{% block cuerpo %}
+<h1>Salidas</h1>
+<p class="intro">Todo lo que ha generado <code>procesar</code> en la carpeta <code>salidas/</code>.</p>
+
+{% if not salidas %}
+<p class="aviso">Todavía no hay nada en <code>salidas/</code>. Ejecute «Procesar un recorrido».</p>
+{% endif %}
+
+<div class="rejilla">
+  {% for s in salidas %}
+  <div class="tarjeta estatica">
+    <h3>{{ s.nombre }}</h3>
+    <p>
+      {{ s.recortes }} recortes
+      {%- if s.db %} · base de datos{% endif %}
+      {%- if s.csv %} · CSV{% endif %}
+    </p>
+    <p class="enlaces">
+      {% if s.mapa %}<a href="{{ url_for('archivo', ruta=s.rel + '/mapa.html') }}">Mapa</a>{% endif %}
+      {% if s.db %}<a href="{{ url_for('revisar', db=s.rel + '/danos.db') }}">Revisar</a>{% endif %}
+      {% for v in s.videos %}
+      <a href="{{ url_for('archivo', ruta=s.rel + '/' + v) }}">{{ v }}</a>
+      {% endfor %}
+    </p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

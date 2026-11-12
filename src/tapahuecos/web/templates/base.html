@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}TapaHuecos{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="{{ url_for('index') }}">TapaHuecos<span>web</span></a>
+    <nav>
+      <a href="{{ url_for('index') }}">Acciones</a>
+      <a href="{{ url_for('lista_salidas') }}">Salidas</a>
+      <a href="{{ url_for('revisar') }}">Revisar</a>
+    </nav>
+  </header>
+  <main class="contenedor">
+    {% block cuerpo %}{% endblock %}
+  </main>
+  <footer class="pie">
+    Herramienta local · los comandos se ejecutan en <code>{{ config.RAIZ }}</code>
+  </footer>
+</body>
+</html>

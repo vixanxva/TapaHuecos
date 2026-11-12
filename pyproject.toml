@@ -20,13 +20,19 @@ dependencies = [
 [project.optional-dependencies]
 # Ultralytics es pesado (arrastra PyTorch); se separa para que las pruebas y la CI no lo necesiten.
 yolo = ["ultralytics>=8.3", "lap>=0.5.12"]  # lap: lo usa el seguidor ByteTrack
+# Interfaz web local: solo para la presentación; el pipeline funciona sin ella.
+web = ["flask>=3.0"]
 dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]
 tapahuecos = "tapahuecos.cli:main"
+tapahuecos-web = "tapahuecos.web:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"tapahuecos.web" = ["templates/*.html", "static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TapaHuecos GPX</string>
+    <string name="app_tagline">Graba el recorrido en GPX mientras usas la cámara del teléfono. La grabación sigue activa con la pantalla apagada.</string>
+
+    <string name="status_ready">LISTO</string>
+    <string name="status_recording">GRABANDO</string>
+    <string name="status_saving">GUARDANDO</string>
+    <string name="status_error">ERROR</string>
+
+    <string name="state_idle_title">Sin grabación</string>
+    <string name="state_idle_hint">Inicia el GPX primero y después el video. Al terminar, detén el video y luego el GPX.</string>
+    <string name="state_recording_title">Recorrido en curso</string>
+    <string name="state_recording_hint">Puedes apagar la pantalla y abrir la app de cámara. La notificación mantiene el servicio activo.</string>
+    <string name="state_saving_title">Guardando el recorrido</string>
+    <string name="state_saving_hint">Guardando una copia en Documents/TapaHuecos…</string>
+    <string name="state_error_title">No se pudo iniciar la grabación</string>
+    <string name="state_error_hint">Revisa la ubicación y los permisos de la app.</string>
+
+    <string name="metric_duration">TIEMPO</string>
+    <string name="metric_points">PUNTOS</string>
+    <string name="metric_distance">DISTANCIA</string>
+    <string name="metric_accuracy">PRECISIÓN</string>
+    <string name="value_empty">—</string>
+    <string name="value_no_fix">Sin GPS</string>
+
+    <string name="button_start">Iniciar grabación GPX</string>
+    <string name="button_stop">Detener y guardar</string>
+    <string name="button_share">Compartir</string>
+
+    <string name="tips_title">ANTES DE GRABAR</string>
+    <string name="tips_text">1. Activa la ubicación y espera una precisión menor a 10 m.\n2. Inicia esta grabación antes que el video.\n3. Usa la cámara normal del teléfono para grabar la vía.\n4. Mantén el teléfono en el mismo soporte durante la campaña.\n5. No detengas la app desde Recientes: usa el botón Detener.</string>
+    <string name="battery_link">Revisar optimización de batería</string>
+    <string name="battery_explanation">Algunos fabricantes suspenden apps en segundo plano. Si el recorrido se corta, permite que TapaHuecos GPX funcione sin restricciones de batería.</string>
+
+    <string name="recent_title">GRABACIONES RECIENTES</string>
+    <string name="recent_empty">Todavía no hay recorridos guardados en este teléfono.</string>
+    <string name="folder_title">COPIA AUTOMÁTICA</string>
+    <string name="folder_text">Documents/TapaHuecos</string>
+    <string name="folder_hint">La copia local de respaldo queda dentro de la app. Usa Compartir para enviar el GPX por WhatsApp, correo o Drive.</string>
+
+    <string name="share_chooser">Compartir GPX</string>
+    <string name="share_subject">Recorrido GPX: %1$s</string>
+    <string name="share_error">No se pudo compartir el archivo.</string>
+
+    <string name="notification_channel">Grabación GPX</string>
+    <string name="notification_channel_description">Notificación del servicio que registra la ubicación en segundo plano.</string>
+    <string name="notification_title">Grabando recorrido GPX</string>
+    <string name="notification_searching">Buscando señal GPS…</string>
+    <plurals name="notification_text">
+        <item quantity="one">%1$s · %2$d punto · %3$s</item>
+        <item quantity="other">%1$s · %2$d puntos · %3$s</item>
+    </plurals>
+    <string name="notification_saving">Guardando GPX…</string>
+    <string name="notification_stop">Detener</string>
+    <string name="notification_permission_missing">Notificación no visible: concede el permiso de notificaciones para controlar la grabación.</string>
+
+    <string name="error_fine_location_required">Para un GPX útil necesitas conceder la ubicación precisa.</string>
+    <string name="error_location_disabled">Activa la ubicación del teléfono (GPS) para grabar el recorrido.</string>
+    <string name="error_gps_unavailable">Este dispositivo no tiene GPS disponible.</string>
+    <string name="error_could_not_start">No se pudo iniciar el servicio de grabación.</string>
+    <string name="error_public_export">No se pudo copiar a Documents/TapaHuecos. El archivo sigue disponible para compartir.</string>
+    <string name="error_write">No se pudo escribir el archivo GPX: %1$s</string>
+    <string name="error_generic">Error: %1$s</string>
+
+    <string name="dialog_location_title">Ubicación necesaria</string>
+    <string name="dialog_location_message">TapaHuecos GPX necesita acceso a la ubicación precisa para registrar cada punto del recorrido. Selecciona “Mientras uso la app” y activa la ubicación precisa.</string>
+    <string name="dialog_open_settings">Abrir ajustes</string>
+    <string name="dialog_cancel">Cancelar</string>
+    <string name="dialog_gps_title">Activa el GPS</string>
+    <string name="dialog_gps_message">La ubicación del teléfono está desactivada. Actívala para empezar a registrar el recorrido.</string>
+    <string name="dialog_gps_settings">Abrir ajustes de ubicación</string>
+
+    <string name="export_ok">Guardado en Documents/TapaHuecos</string>
+    <string name="file_date">%1$s · %2$s</string>
+
+    <string name="battery_settings_unavailable">No se encontró la pantalla de optimización de batería.</string>
+    <string name="location_settings_unavailable">No se encontró la pantalla de ubicación.</string>
+    <string name="settings_unavailable">No se encontró la pantalla de ajustes.</string>
+</resources>

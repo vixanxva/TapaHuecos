@@ -29,6 +29,19 @@ runs/
 # Datos de prueba generados por tests/fixtures/generar.py
 tests/fixtures/generados/
 
+# Android: artefactos de build y configuración local de la máquina
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.apk
+*.aab
+
+# Descargas de Drive (se conservan en disco, no se versionan)
+drive-download-*.zip
+
 # Editor / sistema
 .vscode/
 .idea/
