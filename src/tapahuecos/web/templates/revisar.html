@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titulo %}Revisar · TapaHuecos{% endblock %}
+{% block cuerpo %}
+<h1>Revisar daños</h1>
+<p class="intro">
+  Marque cada recorte como <b>real</b> o <b>falso positivo</b>. Se guarda en la base de
+  datos, igual que el comando de consola <code>tapahuecos revisar</code>, pero sin abrir
+  ventanas. Con esos datos se calculan las métricas de campo.
+</p>
+
+<form method="get" class="filtros">
+  <label>Base de datos <input name="db" value="{{ db }}"></label>
+  <label>Vista
+    <select name="modo">
+      <option value="pendientes" {% if modo == 'pendientes' %}selected{% endif %}>Pendientes</option>
+      <option value="todos" {% if modo == 'todos' %}selected{% endif %}>Todos</option>
+    </select>
+  </label>
+  <label>Clase
+    <select name="clase">
+      <option value="">Todas</option>
+      {% for c in clases %}<option value="{{ c }}" {% if c == clase %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit">Aplicar</button>
+</form>
+
+{% if error %}
+<p class="aviso error">{{ error }}</p>
+{% else %}
+<p class="contadores">
+  Total {{ cuenta.total }} · revisados <span id="revisados">{{ cuenta.revisados }}</span>
+  · reales <span id="reales">{{ cuenta.reales }}</span>
+  · pendientes <span id="pendientes">{{ cuenta.pendientes }}</span>
+  · precisión <span id="precision">{{ '%.3f'|format(cuenta.reales / cuenta.revisados) if cuenta.revisados else '—' }}</span>
+</p>
+
+<div class="galeria" id="galeria">
+  {% for f in filas %}
+  <figure class="recorte" data-id="{{ f.id }}">
+    <img src="{{ f.url }}" alt="{{ f.nombre_clase }}" loading="lazy">
+    <figcaption>
+      <b>{{ f.clase }}</b> {{ f.nombre_clase }}<br>
+      <span class="conf">confianza {{ '%.2f'|format(f.confianza) }}</span>
+    </figcaption>
+    <div class="botones">
+      <button type="button" class="real" data-real="1">Real</button>
+      <button type="button" class="falso" data-real="0">Falso</button>
+    </div>
+  </figure>
+  {% else %}
+  <p class="vacio">No hay daños para revisar con este filtro.</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='revisar.js') }}"></script>
+{% endblock %}

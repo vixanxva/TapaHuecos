@@ -180,11 +180,18 @@ def _cmd_mapa(args: argparse.Namespace) -> int:
     from tapahuecos.fusion import unicos
     from tapahuecos.salidas import generar_mapa
 
+    ruta_config = args.config
+    if ruta_config is None and CONFIG_PREDETERMINADA.exists():
+        ruta_config = CONFIG_PREDETERMINADA
+    cfg = cargar_config(ruta_config)
+
     with _abrir_bd(args.db) as bd:
         filas = bd.danos(args.recorrido)
     if not args.todos:
         filas = unicos(filas)
-    ruta = generar_mapa(filas, args.salida or args.db.parent / "mapa.html", args.db.parent)
+    ruta = generar_mapa(
+        filas, args.salida or args.db.parent / "mapa.html", args.db.parent, cfg.mapa.tiles
+    )
     print(f"Mapa con {len(filas)} daños: {ruta}")
     return 0
 
@@ -339,6 +346,9 @@ def construir_parser() -> argparse.ArgumentParser:
 
     m = sub.add_parser("mapa", help="regenera el mapa HTML desde la base de datos")
     _argumentos_bd(m)
+    m.add_argument("--config", type=Path,
+                   help="archivo YAML de parámetros (por defecto config.yaml de la carpeta actual, "
+                        "si existe); de ahí se toma el proveedor de mosaicos (mapa.tiles)")
     m.add_argument("--salida", type=Path, help="ruta del HTML (por defecto: mapa.html junto a la BD)")
     m.add_argument("--todos", action="store_true",
                    help="un punto por registro, sin agrupar los daños repetidos entre recorridos")
