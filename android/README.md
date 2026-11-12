@@ -37,9 +37,11 @@ el archivo que después se pasa a `tapahuecos procesar`.
    activo.
 4. **Iniciar primero el GPX y después el video** con la cámara normal.
 5. Al terminar, **detener primero el video y después el GPX**.
-6. Exportar o compartir el GPX. La copia privada queda en
-   `Android/data/com.tapahuecos.gpx/files/Documents/TapaHuecos/` y la pública en
-   `Documents/TapaHuecos/`.
+6. Al detener, la app copia el GPX sola a `Documents/TapaHuecos/` (o a
+   `Download/TapaHuecos/` si `Documents` falla). La copia privada queda en
+   `Android/data/com.tapahuecos.gpx/files/Documents/TapaHuecos/` y se puede
+   **compartir** desde la lista de grabaciones. Si el sistema cierra la app sin
+   detenerla, solo queda la copia privada.
 7. Copiar el GPX a `datos/gpx/` del computador y procesarlo con su video.
 
 > En algunos fabricantes (Xiaomi, Huawei, Samsung, etc.) hay que permitir que la app
