@@ -141,7 +141,7 @@ oculto.
 
 - **Video anotado:** un recorrido real de Montería con los daños marcados.
 - **Mapa:** 48 puntos con su recorte, capa por tipo de daño.
-- **En vivo:** `python scripts/presentar.py vivo` (video + GPX → detección → mapa, en un minuto).
+- **En vivo:** *Procesar* en el programa (`scripts/programa.py`) (video + GPX → detección → mapa, en un minuto).
 
 *Nota:* dejar preparado el video y el mapa abiertos en pestañas aparte, por si la demo en
 vivo falla. Ver el plan B en [presentacion.md](presentacion.md).

@@ -8,26 +8,26 @@ explicados desde cero, en [conceptos.md](conceptos.md).
 
 **Media hora antes, en el equipo de la presentación:**
 
-La demo completa sale de un solo comando, desde la carpeta del proyecto:
+La demo es un programa de escritorio. Se abre con doble clic en el acceso directo
+*TapaHuecos* del escritorio, o desde la carpeta del proyecto:
 
 ```bash
-python scripts/presentar.py
+pythonw scripts/programa.py
 ```
 
-Hace tres pasos y espera *Enter* entre uno y otro, para ir al ritmo del guion:
+La ventana tiene dos partes, en el orden del guion:
 
-1. **Mapa** de la campaña (1:30): los 48 daños revisados, con su recorte al hacer clic.
-2. **En vivo** (7:00): procesa `datos/demo/` (video + GPX) con la detección en pantalla,
-   en un minuto aproximadamente, y abre el mapa que genera.
-3. **Resultados** (8:30): la tabla de precisión de campo por clase (39 de 48: 0,8125).
-
-Cada paso también corre por separado (`python scripts/presentar.py vivo`), y
-`python scripts/presentar.py video` abre el video anotado de la campaña (plan B).
+- **Campaña real** (1:30 y 8:30): las cifras de la campaña de Montería y la tabla de
+  precisión de campo por clase (39 de 48: 0,8125), calculadas de la base revisada a mano.
+  *Abrir mapa* muestra los 48 daños con su recorte; *Ver video anotado* es el plan B.
+- **Procesar un recorrido** (7:00): trae elegidos el video y el GPX de `datos/demo/`.
+  *Procesar* muestra la detección en una ventana, tarda un minuto aproximadamente y al
+  terminar abre el mapa del resultado. Con *Elegir…* se procesa cualquier otro video.
 
 Necesita `salidas/campana_20261108/` (la carpeta `Prueba_region` de las salidas de Drive),
-`datos/demo/` y `modelos/best_rdd.pt`. Si falta algo, el script lo dice antes de empezar.
+`datos/demo/` y `modelos/best_rdd.pt`. Los resultados quedan en `salidas/programa/`.
 
-**Comprobar:** correrlo completo una vez, que el mapa carga las calles (no cuadros grises)
+**Comprobar:** procesar el video demo una vez, que el mapa carga las calles (no cuadros grises)
 y que la ventana de detección se ve en el proyector. Comprobarlo **con la red que se usará
 ese día**, no antes en la casa.
 
@@ -83,7 +83,7 @@ perdón. Un proyecto que sabe exactamente qué le falta se lee como serio.
 > daño. Una sola pasada en el vehículo reemplaza la inspección a pie, y el resultado es un
 > inventario, no una impresión.»
 
-*(Aquí se pulsa Enter en `scripts/presentar.py`: se abre el mapa de la campaña.)*
+*(Aquí se pulsa «Abrir mapa» en el programa: se abre el mapa de la campaña.)*
 
 ### 1:30–2:30 · Qué entrega (diapositiva 4)
 
@@ -136,13 +136,13 @@ perdón. Un proyecto que sabe exactamente qué le falta se lee como serio.
 
 ### 7:00–8:30 · Demostración (diapositiva 9)
 
-*Opción A (en vivo, paso 2 de `scripts/presentar.py`):*
+*Opción A (en vivo, «Procesar» en el programa):*
 
 > «Vamos a correr el sistema completo frente a ustedes: entra un video y su GPS, y salen
 > los recortes, la base de datos y el mapa. Este video de prueba está armado con imágenes
 > de RDD2022 y un recorrido simulado por la Avenida Primera.»
 
-*Pulsar Enter: se abre la ventana con la detección y, al minuto, el mapa del resultado.
+*Pulsar «Procesar»: se abre la ventana con la detección y, al minuto, el mapa del resultado.
 **No esperar en silencio**: mientras corre, explicar qué significa cada recuadro.*
 
 *Opción B (video anotado, siempre):*
