@@ -22,8 +22,8 @@ issues de GitHub: cuando una tarea existe allí, se indica su número.
 - La base revisada `Salidas/Prueba_region/danos.db` tiene **48/48 daños revisados:
   39 reales y 9 falsos positivos**; precisión **0.8125**. No hay verdad de campo, así
   que la exhaustividad sigue sin medirse.
-- La app Android compañera está en `android/`, compila y pasa sus pruebas unitarias y
-  Lint, pero **todavía no se ha probado en un teléfono físico**.
+- La app Android compañera (graba el GPX) está en la rama `develop`: compila y pasa sus
+  pruebas y Lint, pero **todavía no se ha probado en un teléfono físico**; por eso no está en `main`.
 - Los bloqueos reales ya no son “faltan videos”: son **etiquetas propias**,
   **`best.pt` de fase 2**, **calibración**, **verdad de campo/mediciones con cinta** y
   **trabajo humano de entrega** (informe, demo, sustentación, release).
@@ -46,7 +46,7 @@ issues de GitHub: cuando una tarea existe allí, se indica su número.
 | Otras salidas | Parciales, sin revisar | `Salidas/danos.db` (15 daños) y `Salidas/fps_prueba/danos.db` (6), sin `verificado`; `Salidas/prueba_default/danos.db` está vacía |
 | Reporte de campo | Actualizado | `reportes/campo.md`/`.json`: 48 revisados, 39 reales, precisión 0.8125; exhaustividad y F1 sin dato |
 | Reporte de modelo | Disponible | `reportes/modelo_test.md`/`.json` y curvas/matriz en `runs/rdd_completo/` |
-| App Android | Compila, sin probar en hardware | `android/`; APK en `android/app/build/outputs/apk/debug/app-debug.apk`; ver [android/README.md](../android/README.md) |
+| App Android | En `develop`, sin probar en hardware | Pasa a `main` cuando se pruebe en un teléfono (issues #55 y #57) |
 | ZIP de Drive | Conservados | `drive-download-20261111T215651Z-1-00{1,2,3}.zip`, 5.17 GB en total; no se modificaron ni se borraron |
 
 ## Videos y GPX verificados
@@ -193,9 +193,9 @@ La funcionalidad y sus pruebas ya existen; falta el conteo manual para el criter
 
 ### App Android
 
+- Está en la rama `develop` (carpeta `android/`), no en `main`.
 - `assembleDebug testDebugUnitTest lintDebug`: compila, las pruebas unitarias pasan y
   Lint queda con **0 errores** (solo avisos de versiones).
-- APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
 - Pendiente: instalarla en un teléfono real, grabar con la pantalla apagada y
   comprobar que el GPX exportado se procesa con el pipeline.
 
@@ -240,7 +240,7 @@ es la situación verificable de cada una:
    ni error de área/posición (#17, #27).
 4. **Levantar la verdad de campo** de un tramo y contar a mano los daños; así se
    calculan exhaustividad/F1 (#18) y se valida la fusión (#19).
-5. **Probar la app Android en un teléfono** y procesar su GPX con el pipeline.
+5. **Probar la app Android en un teléfono** (rama `develop`) y procesar su GPX con el pipeline.
 6. **Cerrar la entrega**: convertir los videos anotados a H.264, informe, demo,
    sustentación y release.
 
@@ -263,8 +263,6 @@ python scripts/evaluar.py campo --db Salidas/Prueba_region/danos.db
 copy Salidas\Prueba_region\danos.db %TEMP%\danos_fusion.db
 tapahuecos fusionar --db %TEMP%\danos_fusion.db --radio 8
 
-# 5. Compilar y probar la app Android
-cd android && ./gradlew assembleDebug testDebugUnitTest lintDebug
 ```
 
 Nota: la región `0,0.45,1,1` es una aproximación para la franja de la vía en estos
